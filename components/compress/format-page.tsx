@@ -1,4 +1,4 @@
-import { UploadZone } from "@/components/compress/upload-zone"
+import UploadZone from "@/components/compress/upload-zone"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
