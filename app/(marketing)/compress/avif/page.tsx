@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next"
 import { FormatPage } from "@/components/compress/format-page"
 import { JsonLd } from "@/components/json-ld"
