@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next"
 import { UploadZone } from "@/components/compress/upload-zone"
 import { JsonLd } from "@/components/json-ld"
