@@ -1,167 +1,138 @@
 "use client"
 
-import React, { useCallback, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
+import React, { useMemo, useRef, useState } from "react"
 
-type Status = "compressing" | "done" | "error"
+type OutputFormat = "auto" | "jpg" | "png" | "webp" | "avif"
 
-type Format = "auto" | "jpg" | "png" | "webp" | "avif"
-
-interface ResultItem {
+type ResultItem = {
   id: string
-  name: string
-  originalSize: number
-  compressedSize: number
-  savings: number
-  status: Status
-  downloadUrl?: string
-  errorMsg?: string
+  fileName: string
+  originalBytes: number
+  compressedBytes?: number
+  savingsPct?: number
+  status: "idle" | "uploading" | "done" | "error"
+  error?: string
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://api.zippixel.xyz"
-
-function triggerDownload(url: string, filename: string) {
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes)) return "-"
+  const units = ["B", "KB", "MB", "GB"]
+  let i = 0
+  let n = bytes
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024
+    i++
+  }
+  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
 export default function UploadZone() {
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const [quality, setQuality] = useState(80)
+  const [format, setFormat] = useState<OutputFormat>("auto")
   const [results, setResults] = useState<ResultItem[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
 
-  // UI’daki slider/dropdown ile uyumlu olsun diye basit state:
-  const [quality, setQuality] = useState<number>(80)
-  const [format, setFormat] = useState<Format>("auto")
+  const canClear = results.length > 0
 
-  const doneItems = useMemo(
-    () => results.filter((r) => r.status === "done" && r.downloadUrl),
-    [results]
-  )
+  const onPickFiles = () => {
+    inputRef.current?.click()
+  }
 
-  const compressFiles = useCallback(
-    async (files: File[]) => {
-      const imageFiles = files.filter((f) => f.type.startsWith("image/"))
-      if (imageFiles.length === 0) return
+  const onFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
 
-      setIsProcessing(true)
+    const picked = Array.from(files).filter((f) => f.type.startsWith("image/"))
+    if (picked.length === 0) return
 
-      const entries: ResultItem[] = imageFiles.map((file, i) => ({
-        id: `${Date.now()}-${i}`,
-        name: file.name,
-        originalSize: file.size,
-        compressedSize: 0,
-        savings: 0,
-        status: "compressing",
-      }))
+    // UI'ya ekle
+    const items: ResultItem[] = picked.map((f) => ({
+      id: crypto.randomUUID(),
+      fileName: f.name,
+      originalBytes: f.size,
+      status: "uploading",
+    }))
 
-      setResults((prev) => [...prev, ...entries])
+    setResults((prev) => [...items, ...prev])
 
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i]
-        const entryId = entries[i].id
+    // Şimdilik sadece "upload geliyor mu" test ediyoruz:
+    // API endpoint'in hazır değilse bile en azından request göreceğiz.
+    for (let idx = 0; idx < picked.length; idx++) {
+      const file = picked[idx]
+      const id = items[idx].id
 
-        try {
-          const form = new FormData()
-          form.append("image", file)
-          // backend şu an kullanmasa da problem değil:
-          form.append("quality", String(quality))
-          form.append("format", format)
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("quality", String(quality))
+        formData.append("format", format)
 
-          const res = await fetch(`${API_BASE}/compress`, {
-            method: "POST",
-            body: form,
-          })
+        const res = await fetch("/api/compress", {
+          method: "POST",
+          body: formData,
+        })
 
-          if (!res.ok) throw new Error(`API error: ${res.status}`)
-
-          const blob = await res.blob()
-          const compressedSize = blob.size
-          const savings = Math.round(((file.size - compressedSize) / file.size) * 100)
-          const downloadUrl = URL.createObjectURL(blob)
-
-          setResults((prev) =>
-            prev.map((r) =>
-              r.id === entryId
-                ? {
-                    ...r,
-                    compressedSize,
-                    savings: isFinite(savings) ? Math.max(0, savings) : 0,
-                    status: "done",
-                    downloadUrl,
-                  }
-                : r
-            )
-          )
-        } catch (e: any) {
-          setResults((prev) =>
-            prev.map((r) =>
-              r.id === entryId
-                ? { ...r, status: "error", errorMsg: e?.message || "Failed" }
-                : r
-            )
-          )
+        if (!res.ok) {
+          const text = await res.text().catch(() => "")
+          throw new Error(`API ${res.status}: ${text.slice(0, 200)}`)
         }
+
+        // API binary döndüğünü varsayalım:
+        const blob = await res.blob()
+        const compressedBytes = blob.size
+        const savingsPct = Math.max(
+          0,
+          Math.min(100, Math.round(((file.size - compressedBytes) / file.size) * 100))
+        )
+
+        setResults((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? { ...r, status: "done", compressedBytes, savingsPct }
+              : r
+          )
+        )
+      } catch (e: any) {
+        setResults((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? { ...r, status: "error", error: e?.message ?? "Upload failed" }
+              : r
+          )
+        )
       }
+    }
 
-      setIsProcessing(false)
-    },
-    [quality, format]
-  )
+    // Aynı dosyayı tekrar seçebilmek için input'u resetle
+    if (inputRef.current) inputRef.current.value = ""
+  }
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragging(false)
-      const files = Array.from(e.dataTransfer.files || [])
-      if (files.length > 0) compressFiles(files)
-    },
-    [compressFiles]
-  )
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    void onFiles(e.dataTransfer.files)
+  }
 
-  const handleBrowse = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length > 0) compressFiles(files)
-      e.target.value = ""
-    },
-    [compressFiles]
-  )
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
 
-  const handleDownloadAll = useCallback(() => {
-    // Bazı tarayıcılar çoklu indirmeyi engelleyebilir.
-    // O olursa tek tek “Download” ile indir.
-    doneItems.forEach((r) => {
-      if (r.downloadUrl) triggerDownload(r.downloadUrl, `compressed-${r.name}`)
-    })
-  }, [doneItems])
+  const onDragLeave = () => setIsDragging(false)
 
-  const clearAll = useCallback(() => {
-    // objectURL temizliği
-    results.forEach((r) => {
-      if (r.downloadUrl) URL.revokeObjectURL(r.downloadUrl)
-    })
-    setResults([])
-  }, [results])
+  const clear = () => setResults([])
 
   return (
     <div className="space-y-6">
-      {/* Drop zone */}
       <div
-        className={`rounded-2xl border border-dashed p-10 text-center transition ${
-          isDragging ? "border-emerald-400/70" : "border-emerald-400/30"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragging(true)
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
+        className={[
+          "rounded-2xl border border-dashed p-10 text-center transition",
+          isDragging ? "border-emerald-400/80 bg-emerald-500/5" : "border-emerald-400/30",
+        ].join(" ")}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
       >
         <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/10">
           <span className="text-xl">⬆</span>
@@ -172,21 +143,24 @@ export default function UploadZone() {
           or click to browse. Supports JPG, PNG, WebP, AVIF.
         </div>
 
-        <label className="mt-5 inline-block">
-          <input
-            className="hidden"
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleBrowse}
-          />
-          <Button type="button" variant="secondary">
-            Browse Files
-          </Button>
-        </label>
+        <input
+          ref={inputRef}
+          className="hidden"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => void onFiles(e.target.files)}
+        />
+
+        <button
+          type="button"
+          onClick={onPickFiles}
+          className="mt-5 inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+        >
+          Browse Files
+        </button>
       </div>
 
-      {/* Controls (basit) */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border p-5">
           <div className="mb-2 flex items-center justify-between text-sm font-medium">
@@ -197,9 +171,9 @@ export default function UploadZone() {
             type="range"
             min={10}
             max={100}
+            className="w-full"
             value={quality}
             onChange={(e) => setQuality(Number(e.target.value))}
-            className="w-full"
           />
           <div className="mt-2 text-xs opacity-70">
             Lower quality = smaller file size. 80% recommended.
@@ -209,9 +183,9 @@ export default function UploadZone() {
         <div className="rounded-2xl border p-5">
           <div className="mb-2 text-sm font-medium">Output Format</div>
           <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value as Format)}
             className="w-full rounded-xl border bg-transparent p-2 text-sm"
+            value={format}
+            onChange={(e) => setFormat(e.target.value as OutputFormat)}
           >
             <option value="auto">Auto (Best format)</option>
             <option value="jpg">JPG</option>
@@ -225,30 +199,18 @@ export default function UploadZone() {
         </div>
       </div>
 
-      {/* Results */}
       <div className="rounded-2xl border p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm font-medium">Results ({results.length} images)</div>
-
           <div className="flex gap-2">
-            <Button
+            <button
               type="button"
-              size="sm"
-              variant="secondary"
-              onClick={clearAll}
-              disabled={isProcessing || results.length === 0}
+              onClick={clear}
+              disabled={!canClear}
+              className="inline-flex h-8 items-center justify-center rounded-md bg-secondary px-3 text-sm font-medium text-secondary-foreground disabled:opacity-50"
             >
               Clear
-            </Button>
-
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleDownloadAll}
-              disabled={isProcessing || doneItems.length === 0}
-            >
-              Download All
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -261,59 +223,44 @@ export default function UploadZone() {
                 <th className="py-2">Compressed</th>
                 <th className="py-2">Savings</th>
                 <th className="py-2">Status</th>
-                <th className="py-2"></th>
               </tr>
             </thead>
             <tbody>
-              {results.map((r) => (
-                <tr key={r.id} className="border-b last:border-b-0">
-                  <td className="py-3 max-w-[320px] truncate">{r.name}</td>
-                  <td className="py-3">{(r.originalSize / 1024).toFixed(1)} KB</td>
-                  <td className="py-3">
-                    {r.compressedSize ? (r.compressedSize / 1024).toFixed(1) : "-"} KB
-                  </td>
-                  <td className="py-3">
-                    {r.status === "done" ? (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-emerald-300">
-                        -{r.savings}%
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td className="py-3">
-                    {r.status === "compressing" && <span>⏳</span>}
-                    {r.status === "done" && <span>✅</span>}
-                    {r.status === "error" && <span title={r.errorMsg}>❌</span>}
-                  </td>
-                  <td className="py-3 text-right">
-                    {r.status === "done" && r.downloadUrl ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => triggerDownload(r.downloadUrl!, `compressed-${r.name}`)}
-                      >
-                        Download
-                      </Button>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-              {results.length === 0 && (
+              {results.length === 0 ? (
                 <tr>
-                  <td className="py-6 text-center opacity-70" colSpan={6}>
+                  <td className="py-6 text-center opacity-70" colSpan={5}>
                     No files yet.
                   </td>
                 </tr>
+              ) : (
+                results.map((r) => (
+                  <tr key={r.id} className="border-b last:border-b-0">
+                    <td className="py-3">{r.fileName}</td>
+                    <td className="py-3">{formatBytes(r.originalBytes)}</td>
+                    <td className="py-3">
+                      {r.compressedBytes != null ? formatBytes(r.compressedBytes) : "-"}
+                    </td>
+                    <td className="py-3">
+                      {r.savingsPct != null ? `${r.savingsPct}%` : "-"}
+                    </td>
+                    <td className="py-3">
+                      {r.status === "uploading" && "Uploading..."}
+                      {r.status === "done" && "Done"}
+                      {r.status === "error" && (
+                        <span className="text-red-400">{r.error ?? "Error"}</span>
+                      )}
+                      {r.status === "idle" && "—"}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
 
-        {isProcessing && (
-          <div className="mt-3 text-xs opacity-70">Compressing…</div>
-        )}
+        <p className="mt-3 text-xs opacity-70">
+          Not working? If you see “API 404”, it means <code>/api/compress</code> route isn’t created yet.
+        </p>
       </div>
     </div>
   )
