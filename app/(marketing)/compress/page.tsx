@@ -1,8 +1,8 @@
-export const dynamic = "force-dynamic";
-
 import type { Metadata } from "next"
-import { UploadZone } from "@/components/compress/upload-zone"
+import UploadZone from "@/components/compress/upload-zone"
 import { JsonLd } from "@/components/json-ld"
+
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Compress Images Online — Free AI Image Compressor",
@@ -61,6 +61,7 @@ export default function CompressPage() {
               compression for JPG, PNG, WebP, and AVIF.
             </p>
           </div>
+
           <div className="mt-12">
             <UploadZone />
           </div>
