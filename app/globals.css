@@ -94,66 +94,70 @@
 /* THEME FIX */
 /* Theme palette (soft, premium) */
 :root {
-  /* Backgrounds */
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
+  /* Light: soft sage / stone */
+  --background: 150 20% 97%;
+  --foreground: 222 22% 16%;
 
-  /* Surfaces */
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --card: 150 20% 98%;
+  --card-foreground: 222 22% 16%;
 
-  /* Muted */
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 45%;
+  --popover: 150 20% 98%;
+  --popover-foreground: 222 22% 16%;
 
-  /* Borders */
-  --border: 214 32% 88%;
-  --input: 214 32% 88%;
-  --ring: 142 71% 45%;
+  --muted: 150 16% 93%;
+  --muted-foreground: 220 10% 40%;
 
-  /* Brand */
-  --primary: 142 71% 45%;
+  --border: 150 12% 86%;
+  --input: 150 12% 86%;
+
+  --primary: 142 71% 42%;
   --primary-foreground: 144 70% 10%;
 
-  /* Accents */
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
+  --secondary: 150 16% 93%;
+  --secondary-foreground: 222 22% 16%;
 
+  --accent: 150 16% 93%;
+  --accent-foreground: 222 22% 16%;
+
+  --ring: 142 71% 42%;
   --radius: 1rem;
 }
 
 .dark {
-  /* Premium “near-black” (not flat gray) */
-  --background: 225 25% 6%;
-  --foreground: 210 40% 98%;
+  /* Dark: charcoal (no harsh lines) */
+  --background: 220 18% 7%;
+  --foreground: 210 18% 92%; /* off-white, not pure white */
 
-  /* Lifted surfaces with subtle tint */
-  --card: 225 22% 10%;
-  --card-foreground: 210 40% 98%;
-  --popover: 225 22% 10%;
-  --popover-foreground: 210 40% 98%;
+  --card: 220 16% 10%;
+  --card-foreground: 210 18% 92%;
 
-  /* Muted text (readable) */
-  --muted: 225 18% 14%;
-  --muted-foreground: 215 20% 72%;
+  --popover: 220 16% 10%;
+  --popover-foreground: 210 18% 92%;
 
-  /* Borders (soft, not harsh) */
-  --border: 225 16% 18%;
-  --input: 225 16% 18%;
-  --ring: 142 71% 45%;
+  --muted: 220 14% 14%;
+  --muted-foreground: 210 10% 70%;
 
-  /* Brand */
-  --primary: 142 71% 45%;
+  /* THIS removes “white line” cheap look */
+  --border: 220 12% 16%;
+  --input: 220 12% 16%;
+
+  --primary: 142 71% 42%;
   --primary-foreground: 144 70% 10%;
 
-  --secondary: 225 18% 14%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 225 18% 14%;
-  --accent-foreground: 210 40% 98%;
+  --secondary: 220 14% 14%;
+  --secondary-foreground: 210 18% 92%;
+
+  --accent: 220 14% 14%;
+  --accent-foreground: 210 18% 92%;
+
+  --ring: 142 71% 42%;
+}
+
+/* Kill harsh separators in dark */
+.dark hr,
+.dark .border,
+.dark [class*="border-"] {
+  border-color: hsl(var(--border));
 }
 
 body {
@@ -161,9 +165,13 @@ body {
   color: hsl(var(--foreground));
 }
 
-.dark body {
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
   background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(34, 197, 94, 0.10), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(59, 130, 246, 0.08), transparent 50%),
-    hsl(var(--background));
+    radial-gradient(900px 500px at 20% -10%, rgba(34,197,94,0.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(16,185,129,0.04), transparent 55%);
+  opacity: 1;
 }
