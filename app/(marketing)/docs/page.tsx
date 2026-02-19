@@ -67,14 +67,14 @@ export default function DocsPage() {
                   relative h-full overflow-hidden rounded-2xl border border-white/10
                   bg-white/5 backdrop-blur
                   transition-all duration-300
-                  hover:-translate-y-1 hover:border-emerald-400/40 hover:bg-white/10
+                  hover:-translate-y-1 hover:hover:text-primary-400/40 hover:bg-white/10
                   hover:shadow-2xl hover:shadow-emerald-500/10
                 "
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/15">
-                      <s.icon className="size-5 text-emerald-400" />
+                      <s.icon className="size-5 text-primary-400" />
                     </div>
 
                     {s.badge ? (
@@ -89,7 +89,7 @@ export default function DocsPage() {
                     {s.description}
                   </p>
 
-                  <div className="mt-5 inline-flex items-center text-sm text-emerald-300/90">
+                  <div className="mt-5 inline-flex items-center text-sm text-primary-300/90">
                     Open <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-0.5" />
                   </div>
 
