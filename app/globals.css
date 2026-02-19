@@ -90,3 +90,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* THEME FIX */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+}
+
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
+}
