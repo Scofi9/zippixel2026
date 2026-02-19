@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -45,7 +46,7 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">Log in</Link>
+            <Link href="/sign-in">Log in</Link>
           </Button>
           <Button size="sm" asChild>
             <Link href="/compress">Compress Images</Link>
@@ -85,7 +86,7 @@ export function Navbar() {
               </div>
               <div className="flex flex-col gap-2 px-3">
                 <Button variant="outline" asChild>
-                  <Link href="/dashboard" onClick={() => setOpen(false)}>Log in</Link>
+                  <Link href="/sign-in" onClick={() => setOpen(false)}>Log in</Link>
                 </Button>
                 <Button asChild>
                   <Link href="/compress" onClick={() => setOpen(false)}>Compress Images</Link>
