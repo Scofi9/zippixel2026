@@ -94,37 +94,19 @@
 /* THEME FIX */
 /* Theme palette (soft, premium) */
 :root {
-  /* Light: soft sage / stone */
-  --background: 210 20% 96%;
-  --foreground: 222 22% 16%;
+  --background: 210 20% 94%;
+  --foreground: 222 20% 18%;
 
-  --secondary: 210 20% 92%;
-  --muted: 210 16% 90%;
-  --border: 210 14% 85%;
+  --card: 210 20% 96%;
+  --card-foreground: 222 20% 18%;
 
-  --card: 150 20% 98%;
-  --card-foreground: 222 22% 16%;
+  --secondary: 210 18% 90%;
+  --secondary-foreground: 222 20% 18%;
 
-  --popover: 150 20% 98%;
-  --popover-foreground: 222 22% 16%;
+  --muted: 210 16% 88%;
+  --muted-foreground: 222 12% 40%;
 
-  --muted: 150 16% 93%;
-  --muted-foreground: 220 10% 40%;
-
-  --border: 150 12% 86%;
-  --input: 150 12% 86%;
-
-  --primary: 142 71% 42%;
-  --primary-foreground: 144 70% 10%;
-
-  --secondary: 150 16% 93%;
-  --secondary-foreground: 222 22% 16%;
-
-  --accent: 150 16% 93%;
-  --accent-foreground: 222 22% 16%;
-
-  --ring: 142 71% 42%;
-  --radius: 1rem;
+  --border: 210 14% 82%;
 }
 
 .dark {
@@ -178,4 +160,16 @@ body::before {
     radial-gradient(900px 500px at 20% -10%, rgba(34,197,94,0.06), transparent 60%),
     radial-gradient(900px 500px at 100% 0%, rgba(16,185,129,0.04), transparent 55%);
   opacity: 1;
+}
+
+.light section {
+  background: radial-gradient(
+    ellipse at top,
+    hsl(210 20% 92%),
+    hsl(210 20% 94%)
+  ) !important;
+}
+
+.light header {
+  background-color: hsl(210 20% 94% / 0.8) !important;
 }
