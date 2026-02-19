@@ -1,43 +1,74 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import sharp from "sharp";
-import path from "path";
-import fs from "fs/promises";
-import crypto from "crypto";
 
-export async function POST(req: NextRequest) {
+export const runtime = "nodejs";
+
+export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const form = await req.formData();
+    const file = form.get("file") as File | null;
+
+    const qualityRaw = form.get("quality")?.toString() ?? "80";
+    const formatRaw = (form.get("format")?.toString() ?? "auto") as
+      | "auto"
+      | "jpg"
+      | "png"
+      | "webp"
+      | "avif";
 
     if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const quality = Math.max(10, Math.min(100, Number(qualityRaw) || 80));
+    const input = Buffer.from(await file.arrayBuffer());
 
-    const filename = crypto.randomUUID() + ".webp";
-    const outputDir = path.join(process.cwd(), "public", "compressed");
+    let img = sharp(input).rotate();
 
-    await fs.mkdir(outputDir, { recursive: true });
+    const outFormat = formatRaw === "auto" ? "webp" : formatRaw;
 
-    const outputPath = path.join(outputDir, filename);
+    let out: Buffer;
+    let contentType = "image/webp";
+    let ext = "webp";
 
-    await sharp(buffer)
-      .webp({ quality: 80 })
-      .toFile(outputPath);
+    if (outFormat === "jpg") {
+      out = await img.jpeg({ quality, mozjpeg: true }).toBuffer();
+      contentType = "image/jpeg";
+      ext = "jpg";
+    } else if (outFormat === "png") {
+      out = await img.png({ quality }).toBuffer();
+      contentType = "image/png";
+      ext = "png";
+    } else if (outFormat === "avif") {
+      out = await img.avif({ quality }).toBuffer();
+      contentType = "image/avif";
+      ext = "avif";
+    } else {
+      out = await img.webp({ quality }).toBuffer();
+      contentType = "image/webp";
+      ext = "webp";
+    }
 
-    const originalSize = buffer.length;
-    const compressedSize = (await fs.stat(outputPath)).size;
+    const baseName = (file.name || "image").replace(/\.[^/.]+$/, "");
+    const downloadName = `${baseName}.compressed.${ext}`;
 
-    return NextResponse.json({
-      url: `/compressed/${filename}`,
-      originalSize,
-      compressedSize,
+    return new NextResponse(out, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${downloadName}"`,
+        "Cache-Control": "no-store",
+
+        // frontend için metalar
+        "X-Original-Size": String(input.length),
+        "X-Compressed-Size": String(out.length),
+        "X-Filename": downloadName,
+      },
     });
-
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Compression failed" }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message ?? "Compression failed" },
+      { status: 500 }
+    );
   }
 }
