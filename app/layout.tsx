@@ -39,7 +39,12 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable}`}
       >
         <body className="font-sans antialiased">
-          <ThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
             {children}
           </ThemeProvider>
         </body>
