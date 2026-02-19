@@ -1,6 +1,5 @@
 import { Hero } from "@/components/landing/hero"
 import { FeaturesGrid } from "@/components/landing/features-grid"
-import { PricingPreview } from "@/components/landing/pricing-preview"
 import { FAQ } from "@/components/landing/faq"
 import { CTA } from "@/components/landing/cta"
 import { JsonLd } from "@/components/json-ld"
