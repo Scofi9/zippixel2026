@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -26,6 +26,7 @@ export function Navbar() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
         <Logo />
 
+        {/* Desktop nav */}
         <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -43,30 +44,47 @@ export function Navbar() {
           ))}
         </div>
 
+        {/* Desktop right side */}
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/sign-in">Log in</Link>
-          </Button>
+
+          <SignedOut>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/sign-in">Log in</Link>
+            </Button>
+          </SignedOut>
+
+          <SignedIn>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+
           <Button size="sm" asChild>
             <Link href="/compress">Compress Images</Link>
           </Button>
         </div>
 
+        {/* Mobile menu */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">
               <Menu className="size-5" />
-              <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>
+
           <SheetContent side="right" className="w-80 bg-background">
             <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+
             <div className="flex flex-col gap-6 pt-8">
+
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm text-muted-foreground">Theme</span>
                 <ThemeToggle />
               </div>
+
               <div className="flex flex-col gap-1">
                 {navLinks.map((link) => (
                   <Link
@@ -84,17 +102,40 @@ export function Navbar() {
                   </Link>
                 ))}
               </div>
+
               <div className="flex flex-col gap-2 px-3">
-                <Button variant="outline" asChild>
-                  <Link href="/sign-in" onClick={() => setOpen(false)}>Log in</Link>
-                </Button>
+
+                <SignedOut>
+                  <Button variant="outline" asChild>
+                    <Link href="/sign-in" onClick={() => setOpen(false)}>
+                      Log in
+                    </Link>
+                  </Button>
+                </SignedOut>
+
+                <SignedIn>
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard" onClick={() => setOpen(false)}>
+                      Dashboard
+                    </Link>
+                  </Button>
+
+                  <div className="px-2">
+                    <UserButton afterSignOutUrl="/" />
+                  </div>
+                </SignedIn>
+
                 <Button asChild>
-                  <Link href="/compress" onClick={() => setOpen(false)}>Compress Images</Link>
+                  <Link href="/compress" onClick={() => setOpen(false)}>
+                    Compress Images
+                  </Link>
                 </Button>
+
               </div>
             </div>
           </SheetContent>
         </Sheet>
+
       </nav>
     </header>
   )
