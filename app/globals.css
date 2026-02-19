@@ -95,8 +95,12 @@
 /* Theme palette (soft, premium) */
 :root {
   /* Light: soft sage / stone */
-  --background: 150 20% 97%;
+  --background: 210 20% 96%;
   --foreground: 222 22% 16%;
+
+  --secondary: 210 20% 92%;
+  --muted: 210 16% 90%;
+  --border: 210 14% 85%;
 
   --card: 150 20% 98%;
   --card-foreground: 222 22% 16%;
