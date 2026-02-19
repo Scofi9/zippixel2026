@@ -86,17 +86,6 @@ export default function DocsPage() {
             </Link>
           ))}
         </div>
-
-        {/* API Example */}
-        <div className="mt-24 mx-auto max-w-3xl">
-          <h2 className="text-2xl font-bold tracking-tight text-center">Quick example</h2>
-          <div className="mt-8 overflow-hidden rounded-xl border border-border/50 bg-secondary/50">
-            <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
-              <div className="size-2.5 rounded-full bg-muted-foreground/20" />
-              <div className="size-2.5 rounded-full bg-muted-foreground/20" />
-              <div className="size-2.5 rounded-full bg-muted-foreground/20" />
-              <span className="ml-3 text-xs text-muted-foreground font-mono">compress.js</span>
-            </div>
             <pre className="overflow-auto p-6 text-sm leading-relaxed font-mono text-muted-foreground">
               <code>{`import { ZipPixel } from '@zippixel/sdk';
 
