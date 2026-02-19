@@ -1,106 +1,103 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Book, Code2, Zap, Key, Webhook, FileJson } from "lucide-react"
+import { ArrowRight, BookOpen, KeyRound, Code2, Puzzle, Zap } from "lucide-react"
+
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 export const metadata: Metadata = {
-  title: "Documentation — API Reference & Guides",
-  description:
-    "ZipPixel API documentation. Learn how to integrate AI-powered image compression into your applications with our REST API.",
-  openGraph: {
-    title: "Documentation — ZipPixel",
-    description: "API reference, guides, and SDKs for integrating ZipPixel image compression.",
-    url: "https://zippixel.com/docs",
-  },
-  alternates: { canonical: "https://zippixel.com/docs" },
+  title: "Documentation — ZipPixel",
+  description: "Everything you need to use ZipPixel effectively.",
 }
 
 const sections = [
   {
-    icon: Zap,
     title: "Quick Start",
-    description: "Get up and running with ZipPixel in under 5 minutes.",
-    href: "/docs",
+    description: "Start compressing images in minutes with the web app.",
+    icon: Zap,
+    href: "/compress",
+    badge: "Recommended",
   },
   {
-    icon: Key,
     title: "Authentication",
-    description: "Learn how to authenticate API requests with your API key.",
-    href: "/docs",
+    description: "How access works today (web app). API keys coming soon.",
+    icon: KeyRound,
+    href: "/pricing",
   },
   {
-    icon: Code2,
     title: "API Reference",
-    description: "Complete REST API documentation with request and response examples.",
-    href: "/docs",
+    description: "Not public yet. We’ll publish endpoints when the API is ready.",
+    icon: Code2,
+    href: "/pricing",
+    badge: "Coming soon",
   },
   {
-    icon: FileJson,
     title: "SDKs & Libraries",
-    description: "Official SDKs for JavaScript, Python, Go, Ruby, and PHP.",
-    href: "/docs",
+    description: "Official SDKs are planned. For now, use the dashboard.",
+    icon: Puzzle,
+    href: "/pricing",
+    badge: "Planned",
   },
   {
-    icon: Webhook,
-    title: "Webhooks",
-    description: "Set up webhooks to receive real-time notifications when images are processed.",
-    href: "/docs",
-  },
-  {
-    icon: Book,
-    title: "Guides & Tutorials",
-    description: "Step-by-step guides for common use cases and best practices.",
-    href: "/docs",
+    title: "Guides",
+    description: "Best practices for optimizing images and improving page speed.",
+    icon: BookOpen,
+    href: "/features",
   },
 ]
 
 export default function DocsPage() {
   return (
-    <section className="py-16 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
+    <section className="relative">
+      <div className="mx-auto max-w-6xl px-4 py-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
             Documentation
           </h1>
-          <p className="mt-4 text-pretty text-lg text-muted-foreground">
-            Everything you need to integrate ZipPixel into your applications.
+          <p className="mt-4 text-muted-foreground">
+            Clean, practical docs. We keep it real — no fake SDK snippets.
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sections.map((section) => (
-            <Link key={section.title} href={section.href}>
-              <Card className="h-full border-border/50 bg-card/50 transition-colors hover:border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                    <section.icon className="size-5 text-primary" />
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {sections.map((s) => (
+            <Link key={s.title} href={s.href} className="group">
+              <Card
+                className="
+                  relative h-full overflow-hidden rounded-2xl border border-white/10
+                  bg-white/5 backdrop-blur
+                  transition-all duration-300
+                  hover:-translate-y-1 hover:border-emerald-400/40 hover:bg-white/10
+                  hover:shadow-2xl hover:shadow-emerald-500/10
+                "
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/15">
+                      <s.icon className="size-5 text-emerald-400" />
+                    </div>
+
+                    {s.badge ? (
+                      <Badge variant="secondary" className="bg-white/10 text-foreground">
+                        {s.badge}
+                      </Badge>
+                    ) : null}
                   </div>
-                  <h2 className="mt-4 text-lg font-semibold text-foreground">
-                    {section.title}
-                  </h2>
+
+                  <h2 className="mt-5 text-lg font-semibold">{s.title}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {section.description}
+                    {s.description}
                   </p>
+
+                  <div className="mt-5 inline-flex items-center text-sm text-emerald-300/90">
+                    Open <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 </CardContent>
               </Card>
             </Link>
           ))}
-        </div>
-            <pre className="overflow-auto p-6 text-sm leading-relaxed font-mono text-muted-foreground">
-              <code>{`import { ZipPixel } from '@zippixel/sdk';
-
-const client = new ZipPixel('your-api-key');
-
-const result = await client.compress({
-  source: 'https://example.com/photo.jpg',
-  quality: 80,
-  format: 'webp',
-});
-
-console.log(result.url);     // Compressed image URL
-console.log(result.savings); // "78%"`}</code>
-            </pre>
-          </div>
         </div>
       </div>
     </section>
