@@ -40,16 +40,9 @@ const softwareSchema = {
 }
 
 export default function HomePage() {
-  return (
-    <>
-      <JsonLd data={websiteSchema} />
-      <JsonLd data={organizationSchema} />
-      <JsonLd data={softwareSchema} />
-
-      <Hero />
-      <FeaturesGrid />
-      <FAQ />
-      <CTA />
-    </>
-  )
+return (
+  <div className="bg-white text-black dark:bg-black dark:text-white min-h-screen flex items-center justify-center">
+    THEME TEST
+  </div>
+)
 }
