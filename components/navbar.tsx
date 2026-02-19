@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { label: "Features", href: "/features" },
@@ -42,6 +43,7 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
             <Link href="/dashboard">Log in</Link>
           </Button>
@@ -60,6 +62,10 @@ export function Navbar() {
           <SheetContent side="right" className="w-80 bg-background">
             <SheetTitle className="sr-only">Navigation menu</SheetTitle>
             <div className="flex flex-col gap-6 pt-8">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
               <div className="flex flex-col gap-1">
                 {navLinks.map((link) => (
                   <Link
