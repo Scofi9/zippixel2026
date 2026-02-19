@@ -3,71 +3,67 @@ import sharp from "sharp";
 
 export const runtime = "nodejs";
 
+function pickOutput(format: string, inputMime: string) {
+  if (format && format !== "auto") return format;
+  if (inputMime.includes("png")) return "png";
+  if (inputMime.includes("webp")) return "webp";
+  if (inputMime.includes("avif")) return "avif";
+  return "jpg";
+}
+
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
+
     const file = form.get("file") as File | null;
+    if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-    const qualityRaw = form.get("quality")?.toString() ?? "80";
-    const formatRaw = (form.get("format")?.toString() ?? "auto") as
-      | "auto"
-      | "jpg"
-      | "png"
-      | "webp"
-      | "avif";
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
+    const qualityRaw = String(form.get("quality") ?? "80");
     const quality = Math.max(10, Math.min(100, Number(qualityRaw) || 80));
-    const input = Buffer.from(await file.arrayBuffer());
 
-    let img = sharp(input).rotate();
+    const formatRaw = String(form.get("format") ?? "auto").toLowerCase();
+    const out = pickOutput(formatRaw, file.type);
 
-    const outFormat = formatRaw === "auto" ? "webp" : formatRaw;
+    const inputBuffer = Buffer.from(await file.arrayBuffer());
 
-    let out: Buffer;
-    let contentType = "image/webp";
-    let ext = "webp";
+    let img = sharp(inputBuffer, { failOn: "none" });
 
-    if (outFormat === "jpg") {
-      out = await img.jpeg({ quality, mozjpeg: true }).toBuffer();
-      contentType = "image/jpeg";
-      ext = "jpg";
-    } else if (outFormat === "png") {
-      out = await img.png({ quality }).toBuffer();
+    let outBuffer: Buffer;
+    let contentType = "image/jpeg";
+    let ext = "jpg";
+
+    if (out === "png") {
+      outBuffer = await img.png({ quality }).toBuffer();
       contentType = "image/png";
       ext = "png";
-    } else if (outFormat === "avif") {
-      out = await img.avif({ quality }).toBuffer();
+    } else if (out === "webp") {
+      outBuffer = await img.webp({ quality }).toBuffer();
+      contentType = "image/webp";
+      ext = "webp";
+    } else if (out === "avif") {
+      outBuffer = await img.avif({ quality }).toBuffer();
       contentType = "image/avif";
       ext = "avif";
     } else {
-      out = await img.webp({ quality }).toBuffer();
-      contentType = "image/webp";
-      ext = "webp";
+      outBuffer = await img.jpeg({ quality, mozjpeg: true }).toBuffer();
+      contentType = "image/jpeg";
+      ext = "jpg";
     }
 
-    const baseName = (file.name || "image").replace(/\.[^/.]+$/, "");
-    const downloadName = `${baseName}.compressed.${ext}`;
+    const baseName = (file.name || "image").replace(/\.[^.]+$/, "");
+    const outName = `${baseName}-compressed.${ext}`;
 
-    return new NextResponse(out, {
+    return new NextResponse(outBuffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${downloadName}"`,
+        "Content-Disposition": `attachment; filename="${outName}"`,
         "Cache-Control": "no-store",
-
-        // frontend için metalar
-        "X-Original-Size": String(input.length),
-        "X-Compressed-Size": String(out.length),
-        "X-Filename": downloadName,
       },
     });
   } catch (e: any) {
     return NextResponse.json(
-      { error: e?.message ?? "Compression failed" },
+      { error: "Compression failed", detail: e?.message ?? String(e) },
       { status: 500 }
     );
   }
