@@ -34,10 +34,7 @@ export const metadata: Metadata = {
     description:
       "Compress images instantly without losing quality. Free and fast online image compressor.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 }
 
 export const viewport: Viewport = {
@@ -49,18 +46,22 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <ClerkProvider>
+      <html
+        lang="en"
+        suppressHydrationWarning
+        className={`${inter.variable} ${jetbrainsMono.variable}`}
+      >
         <body className="font-sans antialiased">
-          <ClerkProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-              {children}
-            </ThemeProvider>
-          </ClerkProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            {children}
+          </ThemeProvider>
         </body>
       </html>
+    </ClerkProvider>
   )
 }
