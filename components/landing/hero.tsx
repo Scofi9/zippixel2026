@@ -26,15 +26,17 @@ export function Hero() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             {/* premium hover */}
             <Button
-              size="lg"
-              className="h-12 rounded-xl px-8 text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110 active:translate-y-0"
               asChild
+              className="h-12 rounded-xl px-8 text-base font-semibold
+              bg-primary text-primary-foreground shadow-sm
+              transition-all duration-200
+              hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110
+              active:translate-y-0"
             >
               <Link href="/compress">
                 Compress Images Now
-                <ArrowRight className="ml-1 size-4" />
               </Link>
-            </Button>
+            </Button> 
 
             <Button
               variant="outline"

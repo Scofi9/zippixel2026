@@ -94,19 +94,30 @@
 /* THEME FIX */
 /* Theme palette (soft, premium) */
 :root {
-  --background: 210 20% 94%;
-  --foreground: 222 20% 18%;
+  --background: 210 30% 94%;       /* soft mavi-gri */
+  --foreground: 222 22% 16%;
 
-  --card: 210 20% 96%;
-  --card-foreground: 222 20% 18%;
+  --card: 210 30% 96%;
+  --card-foreground: 222 22% 16%;
 
-  --secondary: 210 18% 90%;
-  --secondary-foreground: 222 20% 18%;
+  --popover: 210 30% 96%;
+  --popover-foreground: 222 22% 16%;
 
-  --muted: 210 16% 88%;
-  --muted-foreground: 222 12% 40%;
+  --secondary: 210 28% 90%;
+  --secondary-foreground: 222 22% 16%;
 
-  --border: 210 14% 82%;
+  --muted: 210 22% 88%;
+  --muted-foreground: 222 12% 42%;
+
+  --border: 210 18% 80%;
+  --input: 210 18% 80%;
+
+  /* PRIMARY = mavi (yeşil değil) */
+  --primary: 213 90% 55%;
+  --primary-foreground: 210 40% 98%;
+
+  --ring: 213 90% 55%;
+  --radius: 1rem;
 }
 
 .dark {
@@ -172,4 +183,20 @@ body::before {
 
 .light header {
   background-color: hsl(210 20% 94% / 0.8) !important;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 50% 0%, rgba(59,130,246,0.10), transparent 60%),
+    radial-gradient(900px 500px at 0% 20%, rgba(14,165,233,0.06), transparent 55%);
+  opacity: 1;
 }
