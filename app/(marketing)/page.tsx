@@ -1,7 +1,5 @@
 import { Hero } from "@/components/landing/hero"
 import { FeaturesGrid } from "@/components/landing/features-grid"
-import { HowItWorks } from "@/components/landing/how-it-works"
-import { Testimonials } from "@/components/landing/testimonials"
 import { PricingPreview } from "@/components/landing/pricing-preview"
 import { FAQ } from "@/components/landing/faq"
 import { CTA } from "@/components/landing/cta"
@@ -40,11 +38,6 @@ const softwareSchema = {
     price: "0",
     priceCurrency: "USD",
   },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.9",
-    reviewCount: "2847",
-  },
 }
 
 export default function HomePage() {
@@ -55,8 +48,6 @@ export default function HomePage() {
       <JsonLd data={softwareSchema} />
       <Hero />
       <FeaturesGrid />
-      <HowItWorks />
-      <Testimonials />
       <PricingPreview />
       <FAQ />
       <CTA />
