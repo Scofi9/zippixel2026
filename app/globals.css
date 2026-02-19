@@ -92,12 +92,61 @@
 }
 
 /* THEME FIX */
+/* Theme palette (soft, premium) */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
+  --background: 210 40% 98%;        /* very soft near-white */
+  --foreground: 222.2 47.4% 11.2%;  /* deep ink */
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+
+  --primary: 142.1 70.6% 45.3%;     /* ZipPixel green */
+  --primary-foreground: 144 70% 10%;
+
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  --ring: 142.1 70.6% 45.3%;
+
+  --radius: 0.9rem;
 }
 
 .dark {
-  --background: 0 0% 4%;
-  --foreground: 0 0% 98%;
+  --background: 222.2 84% 4.9%;     /* deep navy-black */
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 6.5%;           /* slightly lifted from bg */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 6.5%;
+  --popover-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 14%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --border: 217.2 32.6% 18%;
+  --input: 217.2 32.6% 18%;
+
+  --primary: 142.1 70.6% 45.3%;
+  --primary-foreground: 144 70% 10%;
+
+  --secondary: 217.2 32.6% 14%;
+  --secondary-foreground: 210 40% 98%;
+
+  --accent: 217.2 32.6% 14%;
+  --accent-foreground: 210 40% 98%;
+
+  --ring: 142.1 70.6% 45.3%;
 }
