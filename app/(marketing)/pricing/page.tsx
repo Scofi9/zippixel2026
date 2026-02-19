@@ -96,12 +96,17 @@ const plans = [
 
 const comparison = [
   { feature: "Monthly images", free: "50", basic: "300", pro: "2,000", plus: "10,000" },
-  { feature: "Max file size", free: "5MB", basic: "10MB", pro: "25MB", plus: "50MB" },
+  { feature: "Max file size (per image)", free: "5MB", basic: "10MB", pro: "25MB", plus: "50MB" },
   { feature: "Formats", free: "JPG, PNG, WebP", basic: "JPG, PNG, WebP, AVIF", pro: "All modern", plus: "All modern" },
-  { feature: "Priority processing", free: false, basic: false, pro: true, plus: true },
+  { feature: "Compression speed", free: "Standard", basic: "Fast", pro: "Faster", plus: "Fastest" },
+  { feature: "Priority queue", free: false, basic: false, pro: true, plus: true },
   { feature: "Batch upload", free: false, basic: false, pro: true, plus: true },
   { feature: "Analytics", free: false, basic: false, pro: true, plus: true },
+  { feature: "Watermark", free: "No", basic: "No", pro: "No", plus: "No" },
+  { feature: "Support", free: "Community", basic: "Email", pro: "Priority email", plus: "Priority + faster SLA" },
+  { feature: "API access", free: "—", basic: "—", pro: "Coming soon", plus: "Coming soon" },
 ]
+
 
 function CellValue({ value }: { value: string | boolean }) {
   if (typeof value === "string") return <span>{value}</span>
@@ -128,19 +133,22 @@ export default function PricingPage() {
               key={plan.name}
               className={
                 plan.highlighted
-                  ? "group relative overflow-hidden rounded-2xl border border-primary/50 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-2xl hover:shadow-primary/15"
-                  : "group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-card hover:shadow-2xl hover:shadow-primary/10"
+                  ? "group relative flex h-full overflow-hidden rounded-2xl border border-primary/50 bg-white/5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/70 hover:bg-white/10 hover:shadow-2xl hover:shadow-primary/15"
+                  : "group relative flex h-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-white/10 hover:shadow-2xl hover:shadow-primary/10"
               }
             >
-              {/* Premium glow */}
+                            {/* Premium glow + sheen */}
               <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-                <div className="absolute -right-24 -bottom-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+                <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-primary/12 blur-3xl" />
+                <div className="absolute -right-24 -bottom-24 h-64 w-64 rounded-full bg-primary/12 blur-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/8 via-transparent to-transparent" />
               </div>
 
               {plan.highlighted && (
-                <div className="absolute -top-3 left-6 z-10">
-                  <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+                  <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground shadow-lg shadow-primary/20 ring-1 ring-primary/40">
+                    Most Popular
+                  </Badge>
                 </div>
               )}
 
@@ -153,8 +161,8 @@ export default function PricingPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="relative z-10">
-                <ul className="flex flex-col gap-3">
+              <CardContent className="relative z-10 flex flex-1 flex-col">
+                <ul className="flex flex-1 flex-col gap-3">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2.5">
                       <Check className="size-4 shrink-0 text-primary" />
@@ -163,17 +171,14 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <Button
-                  className="mt-8 w-full"
-                  variant={plan.highlighted ? "default" : "outline"}
-                  asChild
-                >
-                  <Link href={plan.href}>{plan.cta}</Link>
-                </Button>
-
-                {/* subtle bottom highlight */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div className="h-full w-full bg-gradient-to-t from-primary/10 to-transparent" />
+                <div className="mt-auto pt-8">
+                  <Button
+                    className="w-full"
+                    variant={plan.highlighted ? "default" : "outline"}
+                    asChild
+                  >
+                    <Link href={plan.href}>{plan.cta}</Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -189,7 +194,7 @@ export default function PricingPage() {
             Clear limits, no surprises. Upgrade when you need more volume or bigger files.
           </p>
 
-          <div className="mt-10 overflow-auto rounded-xl border border-border/50">
+          <div className="mt-10 overflow-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -202,7 +207,7 @@ export default function PricingPage() {
               </TableHeader>
               <TableBody>
                 {comparison.map((row) => (
-                  <TableRow key={row.feature} className="hover:bg-white/5">
+                  <TableRow key={row.feature} className="hover:bg-white/7">
                     <TableCell className="font-medium">{row.feature}</TableCell>
                     <TableCell className="text-center text-sm">
                       <CellValue value={row.free} />
