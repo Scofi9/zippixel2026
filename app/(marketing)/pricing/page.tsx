@@ -145,14 +145,14 @@ export default function PricingPage() {
               </div>
 
               {plan.highlighted && (
-                <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
-                  <Badge className="rounded-full bg-primary px-3 py-1 text-primary-foreground shadow-lg shadow-primary/20 ring-1 ring-primary/40">
+                <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2">
+                  <Badge className="rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary-foreground shadow-lg shadow-primary/20 backdrop-blur">
                     Most Popular
                   </Badge>
                 </div>
               )}
 
-              <CardHeader className="relative z-10">
+              <CardHeader className={plan.highlighted ? "relative z-10 pt-10" : "relative z-10"}>
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4 flex items-end gap-2">
