@@ -131,7 +131,7 @@ export default function UploadZone() {
       <div
         className={[
           "rounded-2xl border border-dashed p-10 text-center transition cursor-pointer",
-          isDragging ? "border-emerald-400/80 bg-emerald-500/5" : "border-emerald-400/30",
+          isDragging ? "border-primary/60 bg-primary/5" : "border-primary/25",
         ].join(" ")}
         onClick={pick}
         onDrop={onDrop}
@@ -141,7 +141,7 @@ export default function UploadZone() {
         }}
         onDragLeave={() => setIsDragging(false)}
       >
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/10">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10">
           <span className="text-xl">↑</span>
         </div>
 
@@ -174,7 +174,7 @@ export default function UploadZone() {
         <div className="rounded-2xl border p-5">
           <div className="mb-2 flex items-center justify-between text-sm font-medium">
             <span>Quality</span>
-            <span className="text-emerald-400">{quality}%</span>
+            <span className="text-primary">{quality}%</span>
           </div>
           <input
             type="range"

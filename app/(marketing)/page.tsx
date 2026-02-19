@@ -2,6 +2,7 @@ import { Hero } from "@/components/landing/hero"
 import { FeaturesGrid } from "@/components/landing/features-grid"
 import { FAQ } from "@/components/landing/faq"
 import { CTA } from "@/components/landing/cta"
+import { JsonLd } from "@/components/json-ld"
 
 const websiteSchema = {
   "@context": "https://schema.org",
@@ -41,20 +42,11 @@ const softwareSchema = {
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
-      />
+      <JsonLd data={websiteSchema} />
+      <JsonLd data={organizationSchema} />
+      <JsonLd data={softwareSchema} />
 
-      <main className="flex flex-col">
+      <main>
         <Hero />
         <FeaturesGrid />
         <FAQ />
