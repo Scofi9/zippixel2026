@@ -19,8 +19,9 @@ export type StoredJob = {
   createdAt: string; // ISO
 };
 
-const ROOT = process.cwd();
-const STORAGE_DIR = path.join(ROOT, "storage");
+const STORAGE_DIR =
+  process.env.STORAGE_DIR ||
+  (process.env.VERCEL ? "/tmp/zippixel-storage" : path.join(process.cwd(), "storage"));
 
 function userDir(userId: string) {
   return path.join(STORAGE_DIR, userId);
