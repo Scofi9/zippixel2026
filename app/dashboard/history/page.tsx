@@ -1,81 +1,76 @@
 import { auth } from "@clerk/nextjs/server";
 
 function formatBytes(bytes: number) {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
+  if (!bytes) return "0 B";
   const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (
+    (bytes / Math.pow(1024, i)).toFixed(1) +
+    " " +
+    sizes[i]
+  );
 }
 
 export default async function HistoryPage() {
   const { userId } = await auth();
 
   if (!userId) {
-    return (
-      <div className="p-6 text-white">
-        Please sign in to view your compression history.
-      </div>
-    );
+    return <div className="p-6 text-white">Not logged in</div>;
   }
 
-  const res = await fetch("http://localhost:3001/api/jobs", {
-    cache: "no-store",
-    headers: {
-      Cookie: "", // Clerk zaten server tarafında auth sağlıyor
-    },
-  });
+  const res = await fetch(
+    "http://localhost:3001/api/jobs",
+    { cache: "no-store" }
+  );
 
-  const data = await res.json();
-  const jobs = data.jobs || [];
+  const { jobs } = await res.json();
 
   return (
     <div className="p-6 text-white">
-      <h1 className="text-2xl font-semibold mb-4">Compression History</h1>
+      <h1 className="text-xl mb-4">History</h1>
 
-      {jobs.length === 0 ? (
-        <div className="text-zinc-400">
-          No compression history yet.
-        </div>
-      ) : (
-        <table className="w-full border border-zinc-800 rounded-lg overflow-hidden">
-          <thead className="bg-zinc-900">
-            <tr className="text-left text-sm text-zinc-400">
-              <th className="p-3">File</th>
-              <th className="p-3">Format</th>
-              <th className="p-3">Original</th>
-              <th className="p-3">Compressed</th>
-              <th className="p-3">Savings</th>
-              <th className="p-3">Date</th>
-              <th className="p-3">Download</th>
+      {jobs.length === 0 && (
+        <div>No compressions yet.</div>
+      )}
+
+      {jobs.length > 0 && (
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Original</th>
+              <th>Compressed</th>
+              <th>Savings</th>
+              <th>Date</th>
+              <th></th>
             </tr>
           </thead>
 
           <tbody>
             {jobs.map((job: any) => (
-              <tr
-                key={job.id}
-                className="border-t border-zinc-800 hover:bg-zinc-900/50"
-              >
-                <td className="p-3">{job.fileName}</td>
-                <td className="p-3">{job.format}</td>
-                <td className="p-3">
+              <tr key={job.id}>
+                <td>{job.fileName}</td>
+
+                <td>
                   {formatBytes(job.originalBytes)}
                 </td>
-                <td className="p-3">
+
+                <td>
                   {formatBytes(job.compressedBytes)}
                 </td>
-                <td className="p-3 text-green-400">
+
+                <td>
                   -{job.savingsPercent}%
                 </td>
-                <td className="p-3">
-                  {new Date(job.createdAt).toLocaleDateString()}
+
+                <td>
+                  {new Date(
+                    job.createdAt
+                  ).toLocaleDateString()}
                 </td>
-                <td className="p-3">
-                  <a
-                    href={job.downloadUrl}
-                    className="text-blue-400 hover:underline"
-                  >
+
+                <td>
+                  <a href={job.downloadUrl}>
                     Download
                   </a>
                 </td>
