@@ -21,12 +21,13 @@ export async function GET(req: NextRequest) {
 
     const redis = getRedis();
 
-    // 1) Önce direkt job key'inden dene
-    let raw = await redis.get<string>(`job:${userId}:${id}`);
+    // 1) job key
+    let raw: any = await redis.get(`job:${userId}:${id}`);
 
-    // 2) Yoksa history listesinden bul (eski kayıtlar için)
+    // 2) yoksa history listeden bul
     if (!raw) {
-      const list = await redis.lrange(`jobs:${userId}`, 0, 200);
+      const list: any[] = await redis.lrange(`jobs:${userId}`, 0, 200);
+
       const found = list.find((x: any) => {
         try {
           const j = typeof x === "string" ? JSON.parse(x) : x;
@@ -37,17 +38,19 @@ export async function GET(req: NextRequest) {
       });
 
       if (found) {
-        raw = typeof found === "string" ? found : JSON.stringify(found);
-        // bir daha "Not found" olmasın diye job key'ini de yaz
-        await redis.set(`job:${userId}:${id}`, raw);
+        raw = found;
+        // job key olarak da yaz (stringle)
+        const toStore = typeof found === "string" ? found : JSON.stringify(found);
+        await redis.set(`job:${userId}:${id}`, toStore);
       }
     }
 
     if (!raw) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const job = JSON.parse(raw) as Job;
+    // raw string ya da object olabilir
+    const job: Job = typeof raw === "string" ? JSON.parse(raw) : raw;
 
-    // 3) Dosyayı Redis'ten çek (compress route bunu base64 kaydediyor)
+    // 3) file base64
     const b64 = await redis.get<string>(`file:${userId}:${id}`);
     if (!b64) {
       return NextResponse.json(
