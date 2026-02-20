@@ -1,57 +1,32 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
+import { PLANS, type PlanKey } from "@/lib/plans"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    description: "Perfect for personal projects",
-    features: [
-      "50 images per month",
-      "Max 5MB per image",
-      "JPG & PNG formats",
-      "Standard compression",
-    ],
-    cta: "Get Started",
-    href: "/compress",
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    price: "$12",
-    description: "For professionals and small teams",
-    features: [
-      "5,000 images per month",
-      "Max 50MB per image",
-      "All formats supported",
-      "AI-powered compression",
-      "API access",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
-    href: "/pricing",
-    highlighted: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    description: "For large-scale operations",
-    features: [
-      "Unlimited images",
-      "No file size limit",
-      "All formats supported",
-      "Custom AI models",
-      "Dedicated infrastructure",
-      "SLA & 24/7 support",
-    ],
-    cta: "Contact Sales",
-    href: "/pricing",
-    highlighted: false,
-  },
-]
+const ORDER: PlanKey[] = ["free", "basic", "pro", "plus"]
+
+const PRICE: Record<PlanKey, string> = {
+  free: "$0",
+  basic: "$4",
+  pro: "$9",
+  plus: "$19",
+}
+
+const DESC: Record<PlanKey, string> = {
+  free: "Try ZipPixel with a strict monthly limit.",
+  basic: "For small creators getting serious.",
+  pro: "For professionals who compress daily.",
+  plus: "For power users & agencies.",
+}
+
+const CTA: Record<PlanKey, { label: string; href: string }> = {
+  free: { label: "Get Started", href: "/compress" },
+  basic: { label: "Upgrade to Basic", href: "/pricing" },
+  pro: { label: "Start Pro", href: "/pricing" },
+  plus: { label: "Go Plus", href: "/pricing" },
+}
 
 export function PricingPreview() {
   return (
@@ -62,57 +37,66 @@ export function PricingPreview() {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-pretty text-lg text-muted-foreground">
-            Start free. Scale as you grow. No hidden fees.
+            Start free. Upgrade when you hit the limit.
           </p>
         </div>
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
-          {plans.map((plan) => (
-            <Card
-              key={plan.name}
-              className={
-                plan.highlighted
-                  ? "relative border-primary/50 bg-card"
-                  : "border-border/50 bg-card/50"
-              }
-            >
-              {plan.highlighted && (
-                <div className="absolute -top-3 left-6">
-                  <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle className="text-lg">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-foreground">
-                    {plan.price}
-                  </span>
-                  {plan.price !== "Custom" && (
+
+        <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {ORDER.map((key) => {
+            const plan = PLANS[key]
+            const highlighted = key === "pro"
+
+            const features = [
+              `${plan.monthlyLimitImages.toLocaleString()} images / month`,
+              `Max ${plan.maxFileMb}MB per image`,
+              key === "free" ? "JPG, PNG, WebP" : "JPG, PNG, WebP, AVIF",
+              highlighted || key === "plus" ? "Priority processing" : "Standard processing",
+            ]
+
+            return (
+              <Card
+                key={key}
+                className={
+                  highlighted ? "relative border-primary/50 bg-card" : "border-border/50 bg-card/50"
+                }
+              >
+                {highlighted && (
+                  <div className="absolute -top-3 left-6">
+                    <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                  </div>
+                )}
+
+                <CardHeader>
+                  <CardTitle className="text-lg">{plan.name}</CardTitle>
+                  <CardDescription>{DESC[key]}</CardDescription>
+
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-foreground">{PRICE[key]}</span>
                     <span className="text-muted-foreground">/month</span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex flex-col gap-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2.5">
-                      <Check className="size-4 shrink-0 text-primary" />
-                      <span className="text-sm text-muted-foreground">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className="mt-8 w-full"
-                  variant={plan.highlighted ? "default" : "outline"}
-                  asChild
-                >
-                  <Link href={plan.href}>{plan.cta}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+                </CardHeader>
+
+                <CardContent>
+                  <ul className="flex flex-col gap-3">
+                    {features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2.5">
+                        <Check className="size-4 shrink-0 text-primary" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    className="mt-8 w-full"
+                    variant={highlighted ? "default" : "outline"}
+                    asChild
+                  >
+                    <Link href={CTA[key].href}>{CTA[key].label}</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
     </section>

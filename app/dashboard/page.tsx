@@ -3,6 +3,7 @@ import Link from "next/link"
 import { currentUser } from "@clerk/nextjs/server"
 import { CreditCard, Image as ImageIcon, Settings, History, ArrowUpRight } from "lucide-react"
 
+import { PLANS, type PlanKey } from "@/lib/plans"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -13,22 +14,6 @@ export const metadata: Metadata = {
   description: "Manage your ZipPixel account, usage, and billing.",
 }
 
-type PlanKey = "free" | "basic" | "pro" | "plus"
-
-const PLANS: Record<
-  PlanKey,
-  {
-    name: string
-    monthlyLimitImages: number
-    maxFileMb: number
-  }
-> = {
-  free: { name: "Free", monthlyLimitImages: 10, maxFileMb: 5 },
-  basic: { name: "Basic", monthlyLimitImages: 250, maxFileMb: 10 },
-  pro: { name: "Pro", monthlyLimitImages: 1500, maxFileMb: 25 },
-  plus: { name: "Plus", monthlyLimitImages: 5000, maxFileMb: 50 },
-}
-
 function clamp(n: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n))
 }
@@ -36,7 +21,6 @@ function clamp(n: number, min = 0, max = 100) {
 export default async function DashboardPage() {
   const user = await currentUser()
 
-  // Dashboard genelde middleware ile protected olur ama yine de güvenli kalsın:
   if (!user) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10">
@@ -55,10 +39,9 @@ export default async function DashboardPage() {
     )
   }
 
-  // Plan / usage şimdilik Clerk metadata’dan okunur (yoksa Free/0)
-  const planKey = (user.publicMetadata?.plan as PlanKey) ?? "free"
-  const safePlanKey: PlanKey = (["free", "basic", "pro", "plus"] as const).includes(planKey)
-    ? planKey
+  const planKeyRaw = (user.publicMetadata?.plan as PlanKey) ?? "free"
+  const safePlanKey: PlanKey = (["free", "basic", "pro", "plus"] as const).includes(planKeyRaw)
+    ? planKeyRaw
     : "free"
 
   const plan = PLANS[safePlanKey]
@@ -81,12 +64,9 @@ export default async function DashboardPage() {
             </Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Manage your account, plan, and monthly usage.
-        </p>
+        <p className="text-sm text-muted-foreground">Manage your account, plan, and monthly usage.</p>
       </div>
 
-      {/* Overview cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
@@ -121,14 +101,10 @@ export default async function DashboardPage() {
           <CardContent className="space-y-3">
             <div className="flex items-end justify-between">
               <div className="text-2xl font-semibold">{usageThisMonth.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">
-                / {limit.toLocaleString()}
-              </div>
+              <div className="text-sm text-muted-foreground">/ {limit.toLocaleString()}</div>
             </div>
             <Progress value={percent} />
-            <div className="text-xs text-muted-foreground">
-              Tracking is ready. We’ll connect this to real compression events next.
-            </div>
+            <div className="text-xs text-muted-foreground">Usage updates automatically after each successful compression.</div>
           </CardContent>
         </Card>
 
@@ -146,9 +122,7 @@ export default async function DashboardPage() {
               <span className="text-muted-foreground">Email: </span>
               <span className="font-medium">{primaryEmail || "—"}</span>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Plan/usage are stored in Clerk metadata for now.
-            </div>
+            <div className="text-xs text-muted-foreground">Plan/usage are stored in Clerk metadata for now.</div>
           </CardContent>
         </Card>
 
