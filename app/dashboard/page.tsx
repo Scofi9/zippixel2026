@@ -48,11 +48,13 @@ export default async function DashboardPage() {
 
   const usageThisMonth = Number(user.publicMetadata?.usageThisMonth ?? 0) || 0
   const limit = plan.monthlyLimitImages
-  const percent = clamp(limit > 0 ? (usageThisMonth / limit) * 100 : 0)
+  // Eski bug yüzünden metadata limit üstüne çıkmış olabilir -> UI’da clamp
+  const usageShown = limit > 0 ? Math.min(usageThisMonth, limit) : usageThisMonth
+  const percent = clamp(limit > 0 ? (usageShown / limit) * 100 : 0)
 
   const isFree = safePlanKey === "free"
   const isLimitReached = limit > 0 && usageThisMonth >= limit
-  const remaining = Math.max(0, limit - usageThisMonth)
+  const remaining = Math.max(0, limit - usageShown)
 
   const primaryEmail = user.emailAddresses?.[0]?.emailAddress ?? ""
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim()
@@ -88,7 +90,7 @@ export default async function DashboardPage() {
             <CardTitle className="flex items-center justify-between">
               Monthly limit reached
               <Badge variant="secondary">
-                {usageThisMonth.toLocaleString()} / {limit.toLocaleString()}
+                {usageShown.toLocaleString()} / {limit.toLocaleString()}
               </Badge>
             </CardTitle>
             <CardDescription>
@@ -139,7 +141,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-end justify-between">
-              <div className="text-2xl font-semibold">{usageThisMonth.toLocaleString()}</div>
+              <div className="text-2xl font-semibold">{usageShown.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">/ {limit.toLocaleString()}</div>
             </div>
 

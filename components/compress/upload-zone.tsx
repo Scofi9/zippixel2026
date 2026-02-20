@@ -130,7 +130,13 @@ export default function UploadZone() {
       const blob = await res.blob();
 
       // Başarılı compress sonrası usage artır
-      await fetch("/api/usage/increment", { method: "POST" });
+      const usageRes = await fetch("/api/usage/increment", { method: "POST" });
+      if (!usageRes.ok) {
+        const t = await usageRes.text().catch(() => "");
+        if (isLimitReachedError(usageRes.status, t)) {
+          setLimitReached(true);
+        }
+      }
 
       const compressedSize = blob.size;
       const savings = Math.max(
