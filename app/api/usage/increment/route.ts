@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 function monthKey(d = new Date()) {
@@ -13,17 +12,18 @@ export async function POST() {
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ step: "auth", error: "Unauthorized" }, { status: 401 });
     }
 
+    // Step: get user
     const user = await clerkClient.users.getUser(userId);
 
-    const md = user.publicMetadata as Record<string, any> || {};
+    const md = (user.publicMetadata ?? {}) as Record<string, any>;
 
     const keyNow = monthKey();
-    const keyStored = md.usageMonthKey || keyNow;
+    const keyStored = (md.usageMonthKey as string) ?? keyNow;
 
-    let usage = Number(md.usageThisMonth || 0);
+    let usage = Number(md.usageThisMonth ?? 0) || 0;
 
     if (keyStored !== keyNow) {
       usage = 0;
@@ -31,6 +31,7 @@ export async function POST() {
 
     const nextUsage = usage + 1;
 
+    // Step: update metadata
     await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: {
         ...md,
@@ -41,11 +42,22 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
+      userId,
       usageThisMonth: nextUsage,
+      usageMonthKey: keyNow,
     });
-
   } catch (err: any) {
-    console.error("INCREMENT ERROR:", err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    // En önemli kısım: hatayı JSON olarak geri döndür
+    return NextResponse.json(
+      {
+        step: "catch",
+        name: err?.name,
+        message: err?.message,
+        status: err?.status,
+        errors: err?.errors,
+        stack: String(err?.stack ?? "").slice(0, 800),
+      },
+      { status: 500 }
+    );
   }
 }
