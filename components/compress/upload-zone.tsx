@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -12,25 +11,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, UploadCloud, Image as ImageIcon, Sparkles } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 
 type OutputFormat = "auto" | "jpg" | "png" | "webp" | "avif";
+type Mode = "fast" | "balanced" | "ultra";
 
 type Item = {
   id: string;
   name: string;
+  file: File;
   originalSize: number;
+  originalUrl: string;
   compressedSize?: number;
   savings?: number;
   status: "idle" | "uploading" | "done" | "error";
+  stage?: "analyzing" | "compressing" | "finalizing";
   errorMsg?: string;
-  downloadUrl?: string; // object URL
+  downloadUrl?: string; // object URL (compressed)
   outputFormat?: string;
   outputFileName?: string;
 };
 
-function bytesToKB(bytes: number) {
-  return (bytes / 1024).toFixed(1);
+function formatBytes(bytes: number) {
+  const b = Number(bytes || 0);
+  if (!b) return "0 B";
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), sizes.length - 1);
+  return (b / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
 }
 
 function safeFileName(name: string) {
@@ -47,9 +56,62 @@ function isLimitReachedError(status: number, bodyText: string) {
   }
 }
 
+function BeforeAfter({ original, compressed }: { original: string; compressed: string }) {
+  const [pct, setPct] = useState(50);
+
+  return (
+    <div className="w-full">
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-border/50 bg-muted">
+        {/* Compressed */}
+        <img
+          src={compressed}
+          alt="compressed"
+          className="absolute inset-0 h-full w-full object-contain"
+          loading="lazy"
+        />
+        {/* Original clipped */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}
+        >
+          <img
+            src={original}
+            alt="original"
+            className="h-full w-full object-contain"
+            loading="lazy"
+          />
+        </div>
+
+        <div
+          className="absolute inset-y-0"
+          style={{ left: `${pct}%`, transform: "translateX(-1px)" }}
+        >
+          <div className="h-full w-[2px] bg-white/70 dark:bg-white/60" />
+        </div>
+
+        <div className="absolute left-3 top-3 flex gap-2">
+          <Badge variant="secondary">Original</Badge>
+          <Badge className="bg-primary/20 text-primary border border-primary/30">Compressed</Badge>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={pct}
+          onChange={(e) => setPct(Number(e.target.value))}
+          className="w-full accent-primary"
+          aria-label="Compare"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function UploadZone({ defaultFormat }: { defaultFormat?: string }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-
   const { t } = useI18n();
 
   const [quality, setQuality] = useState(80);
@@ -63,12 +125,19 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
   })();
 
   const [format, setFormat] = useState<OutputFormat>(initialFormat);
+  const [mode, setMode] = useState<Mode>("balanced");
   const [results, setResults] = useState<Item[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Premium UX state
   const [limitReached, setLimitReached] = useState(false);
+
+  const totals = useMemo(() => {
+    const done = results.filter((r) => r.status === "done");
+    const original = done.reduce((a, r) => a + (r.originalSize || 0), 0);
+    const compressed = done.reduce((a, r) => a + (r.compressedSize || 0), 0);
+    const saved = Math.max(0, original - compressed);
+    return { doneCount: done.length, original, compressed, saved };
+  }, [results]);
 
   const pick = () => {
     if (limitReached) return;
@@ -77,7 +146,10 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
 
   const clearAll = () => {
     results.forEach((r) => {
-      if (r.downloadUrl) URL.revokeObjectURL(r.downloadUrl);
+      try {
+        URL.revokeObjectURL(r.originalUrl);
+        if (r.downloadUrl) URL.revokeObjectURL(r.downloadUrl);
+      } catch {}
     });
     setResults([]);
     setLimitReached(false);
@@ -92,75 +164,52 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
     a.remove();
   };
 
-  const downloadAll = () => {
-    const done = results.filter((r) => r.status === "done" && r.downloadUrl);
-    done.forEach((r) =>
-      triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${safeFileName(r.name)}`)
-    );
-  };
+  const compressOne = async (item: Item) => {
+    const id = item.id;
 
-  const prettyFormat = useMemo(() => {
-    if (format === "auto") return t("auto_best");
-    return format.toUpperCase();
-  }, [format, t]);
-
-  const qualityLabel = useMemo(() => {
-    if (quality >= 85) return "Ultra";
-    if (quality >= 70) return "Balanced";
-    return "Small";
-  }, [quality]);
-
-  const compressOne = async (file: File, id: string) => {
     try {
+      setResults((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: "uploading", stage: "analyzing" } : r))
+      );
+
       const fd = new FormData();
-      fd.append("file", file);
-      fd.append("quality", String(quality));
-      fd.append("format", format);
+      fd.set("file", item.file);
+      fd.set("quality", String(quality));
+      fd.set("format", format);
+      fd.set("mode", mode);
+
+      // small UX step
+      await new Promise((r) => setTimeout(r, 180));
+      setResults((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, stage: "compressing" } : r))
+      );
 
       const res = await fetch("/api/compress", { method: "POST", body: fd });
 
       if (!res.ok) {
         const text = await res.text().catch(() => "");
 
-        // LIMIT_REACHED => premium mesaj + upload kilidi
         if (isLimitReachedError(res.status, text)) {
           setLimitReached(true);
-
           setResults((prev) =>
             prev.map((r) =>
               r.id === id
-                ? {
-                    ...r,
-                    status: "error",
-                    errorMsg:
-                      "Monthly limit reached. Upgrade your plan to continue.",
-                  }
+                ? { ...r, status: "error", errorMsg: t("limit_reached_desc") }
+                : r.status === "uploading"
+                ? { ...r, status: "error", errorMsg: t("limit_reached_desc") }
                 : r
             )
           );
-
-          // Bu durumda queue'daki diğerlerini de "limit" diye işaretleyeceğiz (UX)
-          setResults((prev) =>
-            prev.map((r) =>
-              r.status === "uploading"
-                ? {
-                    ...r,
-                    status: "error",
-                    errorMsg:
-                      "Monthly limit reached. Upgrade your plan to continue.",
-                  }
-                : r
-            )
-          );
-
-          return "LIMIT_REACHED" as const;
+          return;
         }
 
-        if (res.status === 413) {
-          throw new Error(t("err_too_large"));
-        }
+        if (res.status === 413) throw new Error(t("err_too_large"));
         throw new Error(text ? text.slice(0, 180) : `${t("err_generic")} (${res.status})`);
       }
+
+      setResults((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, stage: "finalizing" } : r))
+      );
 
       const blob = await res.blob();
 
@@ -169,21 +218,15 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
       const match = cd.match(/filename="([^"]+)"/);
       const outputFileName = match?.[1] ?? undefined;
 
-      // Başarılı compress sonrası usage artır
+      // usage increment
       const usageRes = await fetch("/api/usage/increment", { method: "POST" });
       if (!usageRes.ok) {
-        const t = await usageRes.text().catch(() => "");
-        if (isLimitReachedError(usageRes.status, t)) {
-          setLimitReached(true);
-        }
+        const txt = await usageRes.text().catch(() => "");
+        if (isLimitReachedError(usageRes.status, txt)) setLimitReached(true);
       }
 
       const compressedSize = blob.size;
-      const savings = Math.max(
-        0,
-        Math.min(100, Math.round(((file.size - compressedSize) / file.size) * 100))
-      );
-
+      const savings = Math.max(0, Math.min(100, Math.round(((item.file.size - compressedSize) / item.file.size) * 100)));
       const url = URL.createObjectURL(blob);
 
       setResults((prev) =>
@@ -192,6 +235,7 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
             ? {
                 ...r,
                 status: "done",
+                stage: undefined,
                 compressedSize,
                 savings,
                 downloadUrl: url,
@@ -201,22 +245,23 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
             : r
         )
       );
-
-      return "OK" as const;
     } catch (e: any) {
       setResults((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                status: "error",
-                errorMsg: e?.message ?? "Compression failed",
-              }
-            : r
-        )
+        prev.map((r) => (r.id === id ? { ...r, status: "error", stage: undefined, errorMsg: e?.message ?? t("err_generic") } : r))
       );
-      return "ERROR" as const;
     }
+  };
+
+  const runWithConcurrency = async (items: Item[], concurrency = 3) => {
+    let index = 0;
+    const workers = new Array(concurrency).fill(0).map(async () => {
+      while (index < items.length) {
+        const current = items[index++];
+        if (limitReached) return;
+        await compressOne(current);
+      }
+    });
+    await Promise.all(workers);
   };
 
   const onFiles = async (files: FileList | null) => {
@@ -228,261 +273,266 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
 
     const items: Item[] = list.map((f) => ({
       id: crypto.randomUUID(),
-      name: f.name,
+      name: safeFileName(f.name),
+      file: f,
       originalSize: f.size,
-      status: "uploading",
+      originalUrl: URL.createObjectURL(f),
+      status: "idle",
     }));
 
+    // prepend newest
     setResults((prev) => [...items, ...prev]);
     setIsProcessing(true);
 
-    // sırayla compress
-    for (let i = 0; i < list.length; i++) {
-      const result = await compressOne(list[i], items[i].id);
-      if (result === "LIMIT_REACHED") break; // limit dolduysa devam etme
-    }
+    await runWithConcurrency(items, 3);
 
     setIsProcessing(false);
-
-    if (inputRef.current) inputRef.current.value = "";
   };
 
-  const onDrop = (e: React.DragEvent) => {
+  const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    if (limitReached) return;
+    e.stopPropagation();
     setIsDragging(false);
-    void onFiles(e.dataTransfer.files);
+    await onFiles(e.dataTransfer.files);
   };
 
-  const doneCount = results.filter((r) => r.status === "done" && r.downloadUrl).length;
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!limitReached) setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const downloadAll = () => {
+    results
+      .filter((r) => r.status === "done" && r.downloadUrl)
+      .forEach((r) => triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`));
+  };
+
+  const stageLabel = (s?: Item["stage"]) => {
+    if (s === "analyzing") return "Analyzing image…";
+    if (s === "compressing") return "Optimizing & compressing…";
+    if (s === "finalizing") return "Finalizing output…";
+    return t("working");
+  };
 
   return (
-    <div className="w-full">
-      {/* Premium limit banner */}
-      {limitReached && (
-        <div className="mb-4 rounded-xl border border-border bg-background/50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-semibold">Monthly limit reached</div>
-              <div className="text-sm text-muted-foreground">
-                You’ve used all compressions included in your plan. Upgrade to keep compressing.
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button asChild>
-                <Link href="/pricing?reason=limit">View plans</Link>
-              </Button>
-              <Button variant="outline" onClick={clearAll}>
-                Clear
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Drop zone */}
-      <div
-        className={[
-          "rounded-2xl border border-dashed p-10 text-center transition",
-          isDragging ? "border-primary/60 bg-primary/5" : "border-border/70",
-          limitReached ? "opacity-60" : "",
-        ].join(" ")}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (limitReached) return;
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={onDrop}
-        role="button"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          pick();
-        }}
-      >
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-xl">
-          ↑
-        </div>
-
-        <div className="mt-4 text-lg font-semibold">
-          {limitReached ? "Upgrade required" : t("upload_drop")}
-        </div>
-
-        <div className="mt-1 text-sm text-muted-foreground">
-          {limitReached
-            ? "You’ve hit your monthly limit."
-            : t("upload_supports")}
-        </div>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => void onFiles(e.target.files)}
-          disabled={limitReached}
-        />
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            pick();
-          }}
-          disabled={limitReached}
-          className="mt-5 inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
-        >
-          {t("upload_browse")}
-        </button>
-      </div>
+    <div
+      className="relative"
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => onFiles(e.target.files)}
+      />
 
       {/* Controls */}
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-background/40 p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">{t("quality")}</div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">{qualityLabel}</Badge>
-              <div className="text-sm font-semibold">{quality}%</div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">{t("quality")}</div>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider value={[quality]} min={40} max={95} step={1} onValueChange={(v) => setQuality(v[0] ?? 80)} />
+              <Badge variant="secondary" className="min-w-12 justify-center">{quality}</Badge>
             </div>
-          </div>
-          <div className="mt-4">
-            <Slider
-              value={[quality]}
-              min={10}
-              max={95}
-              step={1}
-              onValueChange={(v) => setQuality(v[0] ?? 80)}
-              disabled={limitReached}
-            />
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Lower quality = smaller file size. 80% recommended.
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-2xl border border-border bg-background/40 p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">{t("output_format")}</div>
-            <Badge variant="secondary" className="text-xs">{prettyFormat}</Badge>
-          </div>
-          <div className="mt-3">
-            <Select value={format} onValueChange={(v) => setFormat(v as OutputFormat)}>
-              <SelectTrigger disabled={limitReached}>
-                <SelectValue placeholder={t("output_format")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">{t("auto_best")}</SelectItem>
-                <SelectItem value="jpg">JPG</SelectItem>
-                <SelectItem value="png">PNG</SelectItem>
-                <SelectItem value="webp">WebP</SelectItem>
-                <SelectItem value="avif">AVIF</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Auto selects a reasonable output format.
-          </div>
-        </div>
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">{t("output_format")}</div>
+            <div className="mt-2">
+              <Select value={format} onValueChange={(v) => setFormat(v as OutputFormat)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder={t("auto_best")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t("auto_best")}</SelectItem>
+                  <SelectItem value="jpg">JPG</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                  <SelectItem value="webp">WebP</SelectItem>
+                  <SelectItem value="avif">AVIF</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/50">
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">{t("mode")}</div>
+            <div className="mt-2">
+              <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fast">{t("mode_fast")}</SelectItem>
+                  <SelectItem value="balanced">{t("mode_balanced")}</SelectItem>
+                  <SelectItem value="ultra">{t("mode_ultra")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Drop zone */}
+      <button
+        type="button"
+        onClick={pick}
+        disabled={limitReached}
+        className={[
+          "mt-4 w-full rounded-2xl border border-dashed border-border/60 bg-card/30 p-8 text-center transition-all",
+          "hover:bg-card/50 hover:border-border",
+          isDragging ? "ring-2 ring-primary/40 bg-card/60" : "",
+          limitReached ? "opacity-60 cursor-not-allowed" : "",
+        ].join(" ")}
+      >
+        <div className="mx-auto flex max-w-xl flex-col items-center">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <UploadCloud className="size-6" />
+          </div>
+          <div className="mt-4 text-lg font-semibold">{t("upload_drop")}</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground/80">{t("upload_browse")}</span> {t("upload_supports")}
+          </div>
+
+          {limitReached ? (
+            <div className="mt-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm">
+              <div className="font-semibold flex items-center gap-2">
+                <Sparkles className="size-4" />
+                {t("limit_reached_title")}
+              </div>
+              <div className="mt-1 text-muted-foreground">{t("limit_reached_desc")}</div>
+            </div>
+          ) : null}
+        </div>
+      </button>
+
+      {/* Summary */}
+      {totals.doneCount > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <Card className="border-border/50 bg-card/50">
+            <CardContent className="p-4">
+              <div className="text-xs text-muted-foreground">Compressed</div>
+              <div className="mt-1 text-lg font-semibold">{totals.doneCount} files</div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-card/50">
+            <CardContent className="p-4">
+              <div className="text-xs text-muted-foreground">Total saved</div>
+              <div className="mt-1 text-lg font-semibold">{formatBytes(totals.saved)}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-card/50">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">Actions</div>
+                <div className="mt-1 text-sm text-muted-foreground">Download or clear results</div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={downloadAll} disabled={results.every((r) => !r.downloadUrl)}>
+                  <Download className="mr-2 size-4" />
+                  {t("download_all")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={clearAll}>{t("clear")}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
 
       {/* Results */}
-      <div className="mt-8 rounded-2xl border border-border bg-background/40 p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold">
-            {t("results")} ({results.length})
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={clearAll}
-              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
-            >
-              {t("clear")}
-            </button>
-
-            <button
-              type="button"
-              onClick={downloadAll}
-              disabled={doneCount === 0}
-              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {t("download_all")}
-            </button>
-          </div>
+      <div className="mt-8">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold">{t("results")}</div>
+          {isProcessing ? (
+            <Badge variant="secondary">Processing…</Badge>
+          ) : null}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-muted-foreground">
-              <tr className="border-b border-border">
-                <th className="py-2 pr-4">{t("file")}</th>
-                <th className="py-2 pr-4">{t("original")}</th>
-                <th className="py-2 pr-4">{t("compressed")}</th>
-                <th className="py-2 pr-4">{t("savings")}</th>
-                <th className="py-2 pr-4">{t("status")}</th>
-                <th className="py-2">{t("download")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r) => (
-                <tr key={r.id} className="border-b border-border/60">
-                  <td className="py-3 pr-4">{r.name}</td>
-                  <td className="py-3 pr-4">{bytesToKB(r.originalSize)} KB</td>
-                  <td className="py-3 pr-4">
-                    {r.compressedSize ? `${bytesToKB(r.compressedSize)} KB` : "-"}
-                  </td>
-                  <td className="py-3 pr-4">
-                    {r.status === "done" ? `${r.savings ?? 0}%` : "-"}
-                  </td>
-                  <td className="py-3 pr-4">
-                    {r.status === "uploading" && t("working")}
-                    {r.status === "done" && t("done")}
-                    {r.status === "error" && (
-                      <span className="text-muted-foreground">
-                        {r.errorMsg ?? "Compression failed"}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3">
-                    {r.status === "done" && r.downloadUrl ? (
-                      <button
-                        className="rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
-                        onClick={() =>
-                          triggerDownload(
-                            r.downloadUrl!,
-                            r.outputFileName ?? `zippixel-${safeFileName(r.name)}`
-                          )
-                        }
-                      >
-                        {t("download")}
-                      </button>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                </tr>
-              ))}
+        <div className="mt-3 grid gap-4">
+          {results.length === 0 ? (
+            <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center text-sm text-muted-foreground">
+              {t("no_files")}
+            </div>
+          ) : (
+            results.map((r) => (
+              <Card key={r.id} className="border-border/50 bg-card/50">
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex size-10 items-center justify-center rounded-xl bg-secondary text-foreground">
+                        <ImageIcon className="size-5" />
+                      </div>
+                      <div>
+                        <div className="font-medium leading-tight break-all">{r.name}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {t("original")}: {formatBytes(r.originalSize)}
+                          {r.compressedSize != null ? (
+                            <>
+                              <span className="mx-2">•</span>
+                              {t("compressed")}: {formatBytes(r.compressedSize)}
+                              <span className="mx-2">•</span>
+                              {t("savings")}: <span className="text-foreground/90">{r.savings}%</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
 
-              {results.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                    {t("no_files")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <div className="flex items-center gap-2">
+                      {r.status === "uploading" ? (
+                        <Badge variant="secondary">{stageLabel(r.stage)}</Badge>
+                      ) : null}
+                      {r.status === "done" ? (
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">{t("done")}</Badge>
+                      ) : null}
+                      {r.status === "error" ? (
+                        <Badge className="bg-destructive/15 text-destructive border border-destructive/25">{r.errorMsg ?? "Error"}</Badge>
+                      ) : null}
+
+                      {r.status === "done" && r.downloadUrl ? (
+                        <Button
+                          size="sm"
+                          onClick={() => triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`)}
+                        >
+                          <Download className="mr-2 size-4" />
+                          {t("download")}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Premium compare */}
+                  {r.status === "done" && r.downloadUrl ? (
+                    <div className="mt-4">
+                      <BeforeAfter original={r.originalUrl} compressed={r.downloadUrl} />
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
-
-        {isProcessing && (
-          <div className="mt-4 text-sm text-muted-foreground">Compressing…</div>
-        )}
       </div>
+
+      {/* Drag overlay */}
+      {isDragging && !limitReached ? (
+        <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-primary/50 bg-primary/5" />
+      ) : null}
     </div>
   );
 }

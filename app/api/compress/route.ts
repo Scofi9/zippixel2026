@@ -113,6 +113,12 @@ export async function POST(req: Request) {
 
     const requested = pickRequestedFormat(form.get("format"));
 
+    const modeRaw = String(form.get("mode") ?? "balanced").toLowerCase();
+    const mode = (["fast","balanced","ultra"] as const).includes(modeRaw as any)
+      ? (modeRaw as "fast" | "balanced" | "ultra")
+      : "balanced";
+
+
     const inputBuffer = Buffer.from(await file.arrayBuffer());
 
     // Premium: orientation fix + sRGB (metadata tutulmadan)
@@ -126,72 +132,99 @@ export async function POST(req: Request) {
     // Helper: candidate üret
     const candidates: Array<{ fmt: OutputFormat; buf: Buffer }> = [];
 
-    // Kullanıcı PNG isterse: PNG optimizasyonu (lossless)
-    if (requested === "png") {
-      const pngBuf = await base
-        .png({
-          compressionLevel: 9,
-          adaptiveFiltering: true,
-          palette: true,
-        })
-        .toBuffer();
-      candidates.push({ fmt: "PNG", buf: pngBuf });
-    }
+    // Mode tuning:
+    // - fast: prioritize speed (single encoder pass when possible)
+    // - balanced: good speed/quality, try AVIF only when it is likely to pay off
+    // - ultra: try multiple encoders and pick the smallest
+    const isUltra = mode === "ultra";
+    const isFast = mode === "fast";
 
-    // Kullanıcı JPEG isterse: mozjpeg (lossy)
-    if (requested === "jpeg") {
-      // Alpha varsa jpeg yaparsak transparanlık gider -> o yüzden alpha varsa webp/avif’a düşelim
-      if (!hasAlpha) {
-        const jpgBuf = await base
-          .jpeg({
-            quality: q,
-            mozjpeg: true,
-            progressive: true,
-            chromaSubsampling: "4:2:0",
-          })
-          .toBuffer();
-        candidates.push({ fmt: "JPEG", buf: jpgBuf });
+    const webpEffort = isFast ? 4 : 6;
+    const avifEffort = isUltra ? 7 : 5;
+
+    const inputIsLarge = inputBuffer.length >= 800 * 1024; // 800KB+
+    const likelyPhoto = !hasAlpha && (meta.format === "jpeg" || meta.format === "jpg" || meta.format === "heif" || meta.format === "tiff");
+    const tryAvifInBalanced = mode === "balanced" && inputIsLarge && likelyPhoto;
+
+    // If user explicitly requested a format, produce only that (predictable + fast).
+    if (requested !== "auto") {
+      if (requested === "png") {
+        const pngBuf = await base.png({ compressionLevel: 9, adaptiveFiltering: true, palette: true }).toBuffer();
+        candidates.push({ fmt: "PNG", buf: pngBuf });
+      }
+
+      if (requested === "jpeg") {
+        if (!hasAlpha) {
+          const jpgBuf = await base.jpeg({ quality: q, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" }).toBuffer();
+          candidates.push({ fmt: "JPEG", buf: jpgBuf });
+        } else {
+          // alpha + jpeg request -> fall back to webp to preserve transparency
+          const webpBuf = await base.webp({ quality: q, effort: webpEffort, smartSubsample: true, nearLossless: q >= 86 }).toBuffer();
+          candidates.push({ fmt: "WEBP", buf: webpBuf });
+        }
+      }
+
+      if (requested === "webp") {
+        const webpBuf = await base.webp({ quality: q, effort: webpEffort, smartSubsample: true, nearLossless: q >= 86 }).toBuffer();
+        candidates.push({ fmt: "WEBP", buf: webpBuf });
+      }
+
+      if (requested === "avif") {
+        try {
+          const avifBuf = await base.avif({ quality: q, effort: avifEffort, chromaSubsampling: "4:2:0" }).toBuffer();
+          candidates.push({ fmt: "AVIF", buf: avifBuf });
+        } catch {
+          const webpBuf = await base.webp({ quality: q, effort: webpEffort }).toBuffer();
+          candidates.push({ fmt: "WEBP", buf: webpBuf });
+        }
+      }
+    } else {
+      // Auto format selection
+      // fast: just WebP (very good ratio, great speed)
+      if (isFast) {
+        const webpBuf = await base.webp({ quality: q, effort: webpEffort, smartSubsample: true, nearLossless: q >= 86 }).toBuffer();
+        candidates.push({ fmt: "WEBP", buf: webpBuf });
+      } else if (!isUltra) {
+        // balanced: WebP always + AVIF only when likely to be worth it
+        const webpBuf = await base.webp({ quality: q, effort: webpEffort, smartSubsample: true, nearLossless: q >= 86 }).toBuffer();
+        candidates.push({ fmt: "WEBP", buf: webpBuf });
+
+        if (tryAvifInBalanced) {
+          try {
+            const avifBuf = await base.avif({ quality: q, effort: avifEffort, chromaSubsampling: "4:2:0" }).toBuffer();
+            candidates.push({ fmt: "AVIF", buf: avifBuf });
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        // ultra: try multiple candidates and pick smallest
+        if (!hasAlpha) {
+          const jpgBuf = await base.jpeg({ quality: q, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" }).toBuffer();
+          candidates.push({ fmt: "JPEG", buf: jpgBuf });
+        }
+
+        const pngBuf = await base.png({ compressionLevel: 9, adaptiveFiltering: true, palette: true }).toBuffer();
+        candidates.push({ fmt: "PNG", buf: pngBuf });
+
+        const webpBuf = await base.webp({ quality: q, effort: 6, smartSubsample: true, nearLossless: q >= 86 }).toBuffer();
+        candidates.push({ fmt: "WEBP", buf: webpBuf });
+
+        try {
+          const avifBuf = await base.avif({ quality: q, effort: 7, chromaSubsampling: "4:2:0" }).toBuffer();
+          candidates.push({ fmt: "AVIF", buf: avifBuf });
+        } catch {
+          // ignore
+        }
       }
     }
 
-    // WEBP
-    if (requested === "webp" || requested === "auto" || requested === "jpeg") {
-      const webpBuf = await base
-        .webp({
-          quality: q,
-          effort: 6, // max webp effort
-          smartSubsample: true,
-          // q yüksekken yakın-lossless davran (kaliteyi çok koru)
-          nearLossless: q >= 86 ? true : false,
-        })
-        .toBuffer();
-      candidates.push({ fmt: "WEBP", buf: webpBuf });
-    }
-
-    // AVIF (çoğu fotoğrafta inanılmaz kazanç)
-    if (requested === "avif" || requested === "auto") {
-      try {
-        const avifBuf = await base
-          .avif({
-            quality: q,
-            effort: 7, // iyi sıkıştırma, makul CPU
-            chromaSubsampling: "4:2:0",
-          })
-          .toBuffer();
-        candidates.push({ fmt: "AVIF", buf: avifBuf });
-      } catch {
-        // bazı sharp build’lerinde avif kapalı olabilir -> sessizce geç
-      }
-    }
-
-    // Auto seçimi: en küçük buffer’ı seç
-    // Eğer candidate yoksa (uç case), webp fallback
+    // Eğer candidate yoksa, webp fallback
     if (candidates.length === 0) {
-      const fallback = await base.webp({ quality: q, effort: 6 }).toBuffer();
+      const fallback = await base.webp({ quality: q, effort: webpEffort }).toBuffer();
       candidates.push({ fmt: "WEBP", buf: fallback });
     }
-
-    candidates.sort((a, b) => a.buf.length - b.buf.length);
+candidates.sort((a, b) => a.buf.length - b.buf.length);
     let best = candidates[0];
 
     // Premium davranış: çıktı ASLA orijinalden büyük dönmesin.
@@ -220,6 +253,15 @@ export async function POST(req: Request) {
     await redis.set(`file:${userId}:${id}`, best.buf.toString("base64"), {
       ex: 60 * 60 * 24,
     });
+
+    // Global metrics (for Admin dashboard)
+    try {
+      const savedBytes = Math.max(0, originalBytes - best.buf.length);
+      await redis.incr("global:compressions");
+      await redis.incrby("global:savedBytes", savedBytes);
+    } catch {
+      // ignore metrics errors
+    }
 
     const ext = extFor(best.fmt);
     const ct = contentTypeFor(best.fmt);

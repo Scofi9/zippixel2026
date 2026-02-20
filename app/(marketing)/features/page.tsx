@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Features — ZipPixel",
     description: "AI-powered image compression with batch processing, multi-format support, and API access.",
-    url: "https://zippixel.com/features",
+    url: "https://zippixel.xyz/features",
   },
-  alternates: { canonical: "https://zippixel.com/features" },
+  alternates: { canonical: "https://zippixel.xyz/features" },
 }
 
 const features = [

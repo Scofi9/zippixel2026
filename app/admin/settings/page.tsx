@@ -29,7 +29,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="supportEmail">Support Email</Label>
-              <Input id="supportEmail" type="email" defaultValue="support@zippixel.com" />
+              <Input id="supportEmail" type="email" defaultValue="support@zippixel.xyz" />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="maxFileSize">Max File Size (MB)</Label>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import UploadZone from "@/components/compress/upload-zone"
 import { JsonLd } from "@/components/json-ld"
+import { CompressHero } from "@/components/compress/compress-hero"
 
 export const dynamic = "force-dynamic"
 
@@ -20,10 +21,10 @@ export const metadata: Metadata = {
     title: "Compress Images Online — Free AI Image Compressor",
     description:
       "Reduce image file size up to 90% without quality loss. Free AI-powered image compressor.",
-    url: "https://zippixel.com/compress",
+    url: "https://zippixel.xyz/compress",
   },
   alternates: {
-    canonical: "https://zippixel.com/compress",
+    canonical: "https://zippixel.xyz/compress",
   },
 }
 
@@ -31,18 +32,8 @@ const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: "https://zippixel.com",
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Compress Images",
-      item: "https://zippixel.com/compress",
-    },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://zippixel.xyz" },
+    { "@type": "ListItem", position: 2, name: "Compress Images", item: "https://zippixel.xyz/compress" },
   ],
 }
 
@@ -50,19 +41,10 @@ export default function CompressPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema} />
-      <section className="py-16 lg:py-24">
+      <section className="py-14 sm:py-16 lg:py-24">
         <div className="mx-auto max-w-4xl px-4 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
-              Compress images online
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-pretty text-lg text-muted-foreground">
-              Reduce image file size up to 90% without losing quality. AI-powered
-              compression for JPG, PNG, WebP, and AVIF.
-            </p>
-          </div>
-
-          <div className="mt-12">
+          <CompressHero />
+          <div className="mt-10 sm:mt-12">
             <UploadZone />
           </div>
         </div>

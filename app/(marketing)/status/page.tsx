@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "System Status — ZipPixel",
     description: "Real-time system status and uptime monitoring.",
-    url: "https://zippixel.com/status",
+    url: "https://zippixel.xyz/status",
   },
-  alternates: { canonical: "https://zippixel.com/status" },
+  alternates: { canonical: "https://zippixel.xyz/status" },
 }
 
 const services = [

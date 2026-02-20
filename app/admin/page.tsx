@@ -1,49 +1,90 @@
-import type { Metadata } from "next"
-import { Users, UserCheck, ImageDown, DollarSign } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { AdminChart } from "@/components/admin/admin-chart"
+import type { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getRedis } from "@/lib/redis";
+import { isAdminUser } from "@/lib/is-admin";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-export const metadata: Metadata = {
-  title: "Admin Overview",
-  description: "ZipPixel admin dashboard overview.",
+export const metadata: Metadata = { title: "Admin" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function formatBytes(bytes: number) {
+  const b = Number(bytes || 0);
+  if (!b) return "0 B";
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), sizes.length - 1);
+  return (b / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
 }
 
-const stats = [
-  { label: "Total Users", value: "12,847", change: "+18.2%", icon: Users },
-  { label: "Active Users", value: "8,432", change: "+12.1%", icon: UserCheck },
-  { label: "Total Compressions", value: "2.4M", change: "+24.5%", icon: ImageDown },
-  { label: "Monthly Revenue", value: "$48,720", change: "+15.3%", icon: DollarSign },
-]
+export default async function AdminPage() {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  if (!isAdminUser(user)) redirect("/dashboard");
 
-export default function AdminOverviewPage() {
+  let compressions = 0;
+  let savedBytes = 0;
+
+  try {
+    const redis = getRedis();
+    const [c, s] = await Promise.all([
+      redis.get<number>("global:compressions"),
+      redis.get<number>("global:savedBytes"),
+    ]);
+    compressions = Number(c || 0);
+    savedBytes = Number(s || 0);
+  } catch {
+    // ignore
+  }
+
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Platform metrics and performance.
-        </p>
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Private dashboard. Visible only to users with <span className="font-medium">role=admin</span>.
+          </p>
+        </div>
+        <Badge variant="secondary">Admin mode</Badge>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="border-border/50 bg-card/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <stat.icon className="size-5 text-muted-foreground" />
-                <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                  {stat.change}
-                </Badge>
-              </div>
-              <div className="mt-3 text-2xl font-bold text-foreground">{stat.value}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <CardTitle>Total compressions</CardTitle>
+            <CardDescription>Lifetime total (all users)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{compressions.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <CardTitle>Total bytes saved</CardTitle>
+            <CardDescription>Estimated, based on original vs output sizes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{formatBytes(savedBytes)}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <AdminChart />
+      <div className="mt-6">
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <CardTitle>Next up</CardTitle>
+            <CardDescription>
+              You can extend this panel with user lists, billing events, abuse reports, and usage analytics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            For now, this confirms admin gating is working and shows live metrics from Redis.
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  )
+  );
 }
