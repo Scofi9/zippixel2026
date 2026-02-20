@@ -1,4 +1,5 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 function monthKey(d = new Date()) {
@@ -16,17 +17,16 @@ export async function POST() {
     }
 
     const user = await clerkClient.users.getUser(userId);
-    const md = (user.publicMetadata ?? {}) as Record<string, any>;
+
+    const md = user.publicMetadata as Record<string, any> || {};
 
     const keyNow = monthKey();
-    const keyStored = (md.usageMonthKey as string) ?? keyNow;
+    const keyStored = md.usageMonthKey || keyNow;
 
-    let usage = Number(md.usageThisMonth ?? 0) || 0;
+    let usage = Number(md.usageThisMonth || 0);
 
-    // Ay değiştiyse sıfırla
     if (keyStored !== keyNow) {
       usage = 0;
-      md.usageMonthKey = keyNow;
     }
 
     const nextUsage = usage + 1;
@@ -35,13 +35,17 @@ export async function POST() {
       publicMetadata: {
         ...md,
         usageThisMonth: nextUsage,
-        usageMonthKey: md.usageMonthKey ?? keyNow,
+        usageMonthKey: keyNow,
       },
     });
 
-    return NextResponse.json({ success: true, usageThisMonth: nextUsage });
-  } catch (err) {
-    console.error("usage/increment error:", err);
-    return NextResponse.json({ error: "Failed to update usage" }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      usageThisMonth: nextUsage,
+    });
+
+  } catch (err: any) {
+    console.error("INCREMENT ERROR:", err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
