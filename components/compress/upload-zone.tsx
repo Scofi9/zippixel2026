@@ -70,6 +70,7 @@ export default function UploadZone() {
       }
 
       const blob = await res.blob();
+      await fetch("/api/usage/increment", { method: "POST" });
       const compressedSize = blob.size;
       const savings = Math.max(
         0,
