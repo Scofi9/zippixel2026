@@ -50,6 +50,10 @@ export default async function DashboardPage() {
   const limit = plan.monthlyLimitImages
   const percent = clamp(limit > 0 ? (usageThisMonth / limit) * 100 : 0)
 
+  const isFree = safePlanKey === "free"
+  const isLimitReached = limit > 0 && usageThisMonth >= limit
+  const remaining = Math.max(0, limit - usageThisMonth)
+
   const primaryEmail = user.emailAddresses?.[0]?.emailAddress ?? ""
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim()
 
@@ -58,14 +62,49 @@ export default async function DashboardPage() {
       <div className="mb-8 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <Button asChild variant="secondary">
-            <Link href="/dashboard/billing">
-              Upgrade plan <ArrowUpRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+
+          {isFree && isLimitReached ? (
+            <Button asChild>
+              <Link href="/pricing?reason=limit">
+                Upgrade to continue <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild variant="secondary">
+              <Link href="/dashboard/billing">
+                Upgrade plan <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </div>
+
         <p className="text-sm text-muted-foreground">Manage your account, plan, and monthly usage.</p>
       </div>
+
+      {/* Limit dolunca: net yükseltme kutusu */}
+      {isFree && isLimitReached && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Monthly limit reached
+              <Badge variant="secondary">
+                {usageThisMonth.toLocaleString()} / {limit.toLocaleString()}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Free plan monthly limit is full. Upgrade your plan to keep compressing images.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">
+              You can upgrade instantly and continue without losing access.
+            </div>
+            <Button asChild>
+              <Link href="/pricing?reason=limit">View plans</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -103,8 +142,25 @@ export default async function DashboardPage() {
               <div className="text-2xl font-semibold">{usageThisMonth.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">/ {limit.toLocaleString()}</div>
             </div>
+
             <Progress value={percent} />
-            <div className="text-xs text-muted-foreground">Usage updates automatically after each successful compression.</div>
+
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Remaining this month</span>
+              <span className="font-medium">{remaining.toLocaleString()}</span>
+            </div>
+
+            {isFree && isLimitReached ? (
+              <div className="text-xs">
+                <Link className="underline underline-offset-4" href="/pricing?reason=limit">
+                  Limit is full. Upgrade to continue.
+                </Link>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                Usage updates automatically after each successful compression.
+              </div>
+            )}
           </CardContent>
         </Card>
 
