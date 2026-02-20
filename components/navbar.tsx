@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
+import { SignedIn, SignedOut } from "@clerk/nextjs"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -10,44 +10,30 @@ import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageToggle } from "@/components/language-toggle"
+import { AccountMenu } from "@/components/account-menu"
+import { useI18n } from "@/components/i18n-provider"
 
 const navLinks = [
-  { label: "Features", href: "/features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Docs", href: "/docs" },
+  { key: "nav_features" as const, href: "/features" },
+  { key: "nav_pricing" as const, href: "/pricing" },
+  { key: "nav_docs" as const, href: "/docs" },
 ]
-
-const userButtonAppearance = {
-  elements: {
-    userButtonPopoverCard:
-      "w-72 rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl backdrop-blur-xl",
-    userButtonPopoverMain: "p-3",
-    userButtonPopoverFooter: "hidden",
-    userButtonPopoverActionButton:
-      "rounded-xl hover:bg-white/5 transition-colors",
-    userButtonPopoverActionButtonText: "text-sm text-white/80",
-    userButtonPopoverActionButtonIcon: "text-white/60",
-    userButtonPopoverUserPreview: "rounded-xl bg-white/5",
-    userButtonPopoverUserPreviewTextContainer: "gap-0.5",
-    userButtonPopoverUserPreviewMainIdentifier: "text-sm text-white",
-    userButtonPopoverUserPreviewSecondaryIdentifier: "text-xs text-white/60",
-    userButtonAvatarBox: "h-9 w-9 ring-1 ring-white/10",
-  },
-} as const
 
 export function Navbar() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const { t } = useI18n()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-white/80 dark:bg-background/80 backdrop-blur-xl">
-      <nav className="mx-auto grid h-16 max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-4 lg:px-8">
-        <div className="flex items-center justify-start">
+      <nav className="relative mx-auto flex h-16 max-w-7xl items-center px-4 lg:px-8">
+        <div className="flex items-center gap-3">
           <Logo />
         </div>
 
-        {/* Desktop nav */}
-        <div className="hidden items-center justify-center gap-1 md:flex">
+        {/* Desktop nav (perfectly centered) */}
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center justify-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -57,39 +43,39 @@ export function Navbar() {
                 pathname === link.href ? "text-foreground" : "text-muted-foreground"
               )}
             >
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
         </div>
 
         {/* Desktop right side */}
-        <div className="hidden items-center justify-end gap-3 md:flex">
+        <div className="ml-auto hidden items-center justify-end gap-2 md:flex">
+          <LanguageToggle />
           <ThemeToggle />
 
           <SignedOut>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/sign-in">Log in</Link>
+              <Link href="/sign-in">{t("nav_login")}</Link>
             </Button>
           </SignedOut>
 
           <SignedIn>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/dashboard">{t("nav_dashboard")}</Link>
             </Button>
           </SignedIn>
 
           <Button size="sm" asChild>
-            <Link href="/compress">Compress Images</Link>
+            <Link href="/compress">{t("nav_compress")}</Link>
           </Button>
 
-          {/* Avatar en sağ */}
           <SignedIn>
-            <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
+            <AccountMenu />
           </SignedIn>
         </div>
 
         {/* Mobile menu */}
-        <div className="flex items-center justify-end md:hidden">
+        <div className="ml-auto flex items-center justify-end md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">
@@ -103,7 +89,10 @@ export function Navbar() {
             <div className="flex flex-col gap-6 pt-8">
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm text-muted-foreground">Theme</span>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -119,7 +108,7 @@ export function Navbar() {
                         : "text-muted-foreground"
                     )}
                   >
-                    {link.label}
+                    {t(link.key)}
                   </Link>
                 ))}
               </div>
@@ -128,7 +117,7 @@ export function Navbar() {
                 <SignedOut>
                   <Button variant="outline" asChild>
                     <Link href="/sign-in" onClick={() => setOpen(false)}>
-                      Log in
+                      {t("nav_login")}
                     </Link>
                   </Button>
                 </SignedOut>
@@ -136,24 +125,20 @@ export function Navbar() {
                 <SignedIn>
                   <Button variant="outline" asChild>
                     <Link href="/dashboard" onClick={() => setOpen(false)}>
-                      Dashboard
+                      {t("nav_dashboard")}
                     </Link>
                   </Button>
                 </SignedIn>
 
                 <Button asChild>
                   <Link href="/compress" onClick={() => setOpen(false)}>
-                    Compress Images
+                    {t("nav_compress")}
                   </Link>
                 </Button>
 
-                {/* Mobilde avatar da gösterelim */}
                 <SignedIn>
                   <div className="mt-2 flex justify-end">
-                    <UserButton
-                      afterSignOutUrl="/"
-                      appearance={userButtonAppearance}
-                    />
+                    <AccountMenu />
                   </div>
                 </SignedIn>
               </div>

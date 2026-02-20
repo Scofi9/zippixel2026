@@ -1,8 +1,18 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/components/i18n-provider";
 
 type OutputFormat = "auto" | "jpg" | "png" | "webp" | "avif";
 
@@ -15,6 +25,8 @@ type Item = {
   status: "idle" | "uploading" | "done" | "error";
   errorMsg?: string;
   downloadUrl?: string; // object URL
+  outputFormat?: string;
+  outputFileName?: string;
 };
 
 function bytesToKB(bytes: number) {
@@ -35,11 +47,22 @@ function isLimitReachedError(status: number, bodyText: string) {
   }
 }
 
-export default function UploadZone() {
+export default function UploadZone({ defaultFormat }: { defaultFormat?: string }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const { t } = useI18n();
+
   const [quality, setQuality] = useState(80);
-  const [format, setFormat] = useState<OutputFormat>("auto");
+  const initialFormat = ((): OutputFormat => {
+    const v = String(defaultFormat ?? "").toLowerCase();
+    if (v === "jpg" || v === "jpeg") return "jpg";
+    if (v === "png") return "png";
+    if (v === "webp") return "webp";
+    if (v === "avif") return "avif";
+    return "auto";
+  })();
+
+  const [format, setFormat] = useState<OutputFormat>(initialFormat);
   const [results, setResults] = useState<Item[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -72,9 +95,20 @@ export default function UploadZone() {
   const downloadAll = () => {
     const done = results.filter((r) => r.status === "done" && r.downloadUrl);
     done.forEach((r) =>
-      triggerDownload(r.downloadUrl!, `compressed-${safeFileName(r.name)}`)
+      triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${safeFileName(r.name)}`)
     );
   };
+
+  const prettyFormat = useMemo(() => {
+    if (format === "auto") return t("auto_best");
+    return format.toUpperCase();
+  }, [format, t]);
+
+  const qualityLabel = useMemo(() => {
+    if (quality >= 85) return "Ultra";
+    if (quality >= 70) return "Balanced";
+    return "Small";
+  }, [quality]);
 
   const compressOne = async (file: File, id: string) => {
     try {
@@ -122,12 +156,18 @@ export default function UploadZone() {
           return "LIMIT_REACHED" as const;
         }
 
-        throw new Error(
-          text ? text.slice(0, 200) : `Request failed (${res.status})`
-        );
+        if (res.status === 413) {
+          throw new Error(t("err_too_large"));
+        }
+        throw new Error(text ? text.slice(0, 180) : `${t("err_generic")} (${res.status})`);
       }
 
       const blob = await res.blob();
+
+      const outputFormat = res.headers.get("X-Output-Format") ?? undefined;
+      const cd = res.headers.get("Content-Disposition") ?? "";
+      const match = cd.match(/filename="([^"]+)"/);
+      const outputFileName = match?.[1] ?? undefined;
 
       // Başarılı compress sonrası usage artır
       const usageRes = await fetch("/api/usage/increment", { method: "POST" });
@@ -149,7 +189,15 @@ export default function UploadZone() {
       setResults((prev) =>
         prev.map((r) =>
           r.id === id
-            ? { ...r, status: "done", compressedSize, savings, downloadUrl: url }
+            ? {
+                ...r,
+                status: "done",
+                compressedSize,
+                savings,
+                downloadUrl: url,
+                outputFormat,
+                outputFileName,
+              }
             : r
         )
       );
@@ -259,13 +307,13 @@ export default function UploadZone() {
         </div>
 
         <div className="mt-4 text-lg font-semibold">
-          {limitReached ? "Upgrade required" : "Drop images here to compress"}
+          {limitReached ? "Upgrade required" : t("upload_drop")}
         </div>
 
         <div className="mt-1 text-sm text-muted-foreground">
           {limitReached
             ? "You’ve hit your monthly limit."
-            : "or click to browse. Supports JPG, PNG, WebP, AVIF."}
+            : t("upload_supports")}
         </div>
 
         <input
@@ -287,7 +335,7 @@ export default function UploadZone() {
           disabled={limitReached}
           className="mt-5 inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
         >
-          Browse Files
+          {t("upload_browse")}
         </button>
       </div>
 
@@ -295,37 +343,46 @@ export default function UploadZone() {
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-border bg-background/40 p-5">
           <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">Quality</div>
-            <div className="text-sm font-semibold">{quality}%</div>
+            <div className="text-sm font-medium">{t("quality")}</div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">{qualityLabel}</Badge>
+              <div className="text-sm font-semibold">{quality}%</div>
+            </div>
           </div>
-          <input
-            type="range"
-            min={10}
-            max={95}
-            value={quality}
-            onChange={(e) => setQuality(Number(e.target.value))}
-            className="mt-3 w-full"
-            disabled={limitReached}
-          />
+          <div className="mt-4">
+            <Slider
+              value={[quality]}
+              min={10}
+              max={95}
+              step={1}
+              onValueChange={(v) => setQuality(v[0] ?? 80)}
+              disabled={limitReached}
+            />
+          </div>
           <div className="mt-2 text-xs text-muted-foreground">
             Lower quality = smaller file size. 80% recommended.
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-background/40 p-5">
-          <div className="text-sm font-medium">Output Format</div>
-          <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value as OutputFormat)}
-            className="mt-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-            disabled={limitReached}
-          >
-            <option value="auto">Auto (Best format)</option>
-            <option value="jpg">JPG</option>
-            <option value="png">PNG</option>
-            <option value="webp">WebP</option>
-            <option value="avif">AVIF</option>
-          </select>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">{t("output_format")}</div>
+            <Badge variant="secondary" className="text-xs">{prettyFormat}</Badge>
+          </div>
+          <div className="mt-3">
+            <Select value={format} onValueChange={(v) => setFormat(v as OutputFormat)}>
+              <SelectTrigger disabled={limitReached}>
+                <SelectValue placeholder={t("output_format")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{t("auto_best")}</SelectItem>
+                <SelectItem value="jpg">JPG</SelectItem>
+                <SelectItem value="png">PNG</SelectItem>
+                <SelectItem value="webp">WebP</SelectItem>
+                <SelectItem value="avif">AVIF</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="mt-2 text-xs text-muted-foreground">
             Auto selects a reasonable output format.
           </div>
@@ -336,7 +393,7 @@ export default function UploadZone() {
       <div className="mt-8 rounded-2xl border border-border bg-background/40 p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="text-sm font-semibold">
-            Results ({results.length} images)
+            {t("results")} ({results.length})
           </div>
 
           <div className="flex gap-2">
@@ -345,7 +402,7 @@ export default function UploadZone() {
               onClick={clearAll}
               className="rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
             >
-              Clear
+              {t("clear")}
             </button>
 
             <button
@@ -354,7 +411,7 @@ export default function UploadZone() {
               disabled={doneCount === 0}
               className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              Download All
+              {t("download_all")}
             </button>
           </div>
         </div>
@@ -363,12 +420,12 @@ export default function UploadZone() {
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
               <tr className="border-b border-border">
-                <th className="py-2 pr-4">File</th>
-                <th className="py-2 pr-4">Original</th>
-                <th className="py-2 pr-4">Compressed</th>
-                <th className="py-2 pr-4">Savings</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2">Download</th>
+                <th className="py-2 pr-4">{t("file")}</th>
+                <th className="py-2 pr-4">{t("original")}</th>
+                <th className="py-2 pr-4">{t("compressed")}</th>
+                <th className="py-2 pr-4">{t("savings")}</th>
+                <th className="py-2 pr-4">{t("status")}</th>
+                <th className="py-2">{t("download")}</th>
               </tr>
             </thead>
             <tbody>
@@ -380,11 +437,11 @@ export default function UploadZone() {
                     {r.compressedSize ? `${bytesToKB(r.compressedSize)} KB` : "-"}
                   </td>
                   <td className="py-3 pr-4">
-                    {r.status === "done" ? `-${r.savings}%` : "-"}
+                    {r.status === "done" ? `${r.savings ?? 0}%` : "-"}
                   </td>
                   <td className="py-3 pr-4">
-                    {r.status === "uploading" && "Working"}
-                    {r.status === "done" && "Done"}
+                    {r.status === "uploading" && t("working")}
+                    {r.status === "done" && t("done")}
                     {r.status === "error" && (
                       <span className="text-muted-foreground">
                         {r.errorMsg ?? "Compression failed"}
@@ -398,11 +455,11 @@ export default function UploadZone() {
                         onClick={() =>
                           triggerDownload(
                             r.downloadUrl!,
-                            `compressed-${safeFileName(r.name)}`
+                            r.outputFileName ?? `zippixel-${safeFileName(r.name)}`
                           )
                         }
                       >
-                        Download
+                        {t("download")}
                       </button>
                     ) : (
                       "-"
@@ -414,7 +471,7 @@ export default function UploadZone() {
               {results.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                    No files yet.
+                    {t("no_files")}
                   </td>
                 </tr>
               )}

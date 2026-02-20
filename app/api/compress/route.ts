@@ -194,9 +194,9 @@ export async function POST(req: Request) {
     candidates.sort((a, b) => a.buf.length - b.buf.length);
     let best = candidates[0];
 
-    // Premium davranış: “sıkıştırılmış” orijinalden büyükse orijinali dön
-    // (özellikle zaten optimize png/jpg dosyalarda olur)
-    if (best.buf.length >= Math.floor(inputBuffer.length * 0.98)) {
+    // Premium davranış: çıktı ASLA orijinalden büyük dönmesin.
+    // (zaten optimize edilmiş dosyalarda encoder bazen büyütebilir)
+    if (best.buf.length >= inputBuffer.length) {
       best = { fmt: "ORIGINAL", buf: inputBuffer };
     }
 
@@ -210,7 +210,7 @@ export async function POST(req: Request) {
       outputFormat: best.fmt,
       originalBytes: inputBuffer.length,
       compressedBytes: best.buf.length,
-      savingsPercent: Math.round((1 - best.buf.length / inputBuffer.length) * 100),
+      savingsPercent: Math.max(0, Math.round((1 - best.buf.length / inputBuffer.length) * 100)),
       createdAt: Date.now(),
       outputUrl,
     };
@@ -224,10 +224,14 @@ export async function POST(req: Request) {
     const ext = extFor(best.fmt);
     const ct = contentTypeFor(best.fmt);
 
+    const safeName = file.name.replace(/[^\w.\-() ]+/g, "_");
+    const baseName = safeName.replace(/\.[^/.]+$/, "");
+    const outName = best.fmt === "ORIGINAL" ? safeName : `zippixel-${baseName}.${ext}`;
+
     return new NextResponse(best.buf, {
       headers: {
         "Content-Type": ct,
-        "Content-Disposition": `attachment; filename="compressed-${file.name}.${ext}"`,
+        "Content-Disposition": `attachment; filename="${outName}"`,
         "X-Output-Format": best.fmt,
         "X-Quality-UI": String(uiQuality),
         "X-Quality-Encoder": String(q),

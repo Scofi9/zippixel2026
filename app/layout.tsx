@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
+import { I18nProvider } from "@/components/i18n-provider"
 import "./globals.css"
 
 const inter = Inter({
@@ -15,7 +16,10 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "ZipPixel",
+  title: {
+    default: "ZipPixel",
+    template: "%s · ZipPixel",
+  },
   description:
     "Compress images instantly without losing quality. Free and fast online image compressor.",
 }
@@ -45,7 +49,7 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            {children}
+            <I18nProvider>{children}</I18nProvider>
           </ThemeProvider>
         </body>
       </html>

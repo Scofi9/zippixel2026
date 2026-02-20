@@ -17,7 +17,6 @@ const footerSections = [
     links: [
       { label: "Features", href: "/features" },
       { label: "Pricing", href: "/pricing" },
-      { label: "Blog", href: "/blog" },
       { label: "Documentation", href: "/docs" },
       { label: "Status", href: "/status" },
     ],
@@ -28,7 +27,7 @@ const footerSections = [
       { label: "Reduce Image Size", href: "/compress" },
       { label: "Image Compressor", href: "/compress" },
       { label: "API Docs", href: "/docs" },
-      { label: "Changelog", href: "/blog" },
+      { label: "Support", href: "/docs" },
     ],
   },
 ]

@@ -6,29 +6,35 @@ import {
   LayoutDashboard,
   ImageDown,
   History,
-  FolderOpen,
-  CreditCard,
   Settings,
-  LogOut,
   Menu,
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { useUser, SignOutButton } from "@clerk/nextjs"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Compress", href: "/compress", icon: ImageDown },
   { label: "History", href: "/dashboard/history", icon: History },
-  { label: "Files", href: "/dashboard/files", icon: FolderOpen },
-  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
+function initials(name?: string | null) {
+  const v = (name ?? "").trim();
+  if (!v) return "U";
+  const parts = v.split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase()).join("");
+}
+
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { user } = useUser();
+  const displayName = user?.fullName || user?.firstName || user?.username || "User";
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center px-6">
@@ -57,18 +63,21 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
       </nav>
       <div className="border-t border-border/50 px-3 py-4">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <Avatar className="size-8">
+          <Avatar className="size-8 ring-1 ring-border/60">
+            <AvatarImage src={user?.imageUrl} alt={displayName} />
             <AvatarFallback className="bg-primary/10 text-xs text-primary">
-              JD
+              {initials(displayName)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 truncate">
-            <div className="text-sm font-medium text-foreground">John Doe</div>
-            <div className="text-xs text-muted-foreground">Pro Plan</div>
+            <div className="text-sm font-medium text-foreground truncate">{displayName}</div>
+            <div className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</div>
           </div>
-          <Button variant="ghost" size="icon-sm">
-            <LogOut className="size-4" />
-          </Button>
+          <SignOutButton redirectUrl="/">
+            <Button variant="ghost" size="icon-sm" aria-label="Sign out">
+              <span className="text-xs">↩</span>
+            </Button>
+          </SignOutButton>
         </div>
       </div>
     </div>

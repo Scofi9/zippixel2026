@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { currentUser } from "@clerk/nextjs/server"
-import { CreditCard, Image as ImageIcon, Settings, History, ArrowUpRight } from "lucide-react"
+import { Settings, History, ArrowUpRight } from "lucide-react"
 
 import { PLANS, type PlanKey } from "@/lib/plans"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
             </Button>
           ) : (
             <Button asChild variant="secondary">
-              <Link href="/dashboard/billing">
+              <Link href="/pricing?from=dashboard">
                 Upgrade plan <ArrowUpRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
               <span className="font-medium">{plan.maxFileMb}MB</span>
             </div>
             <Button asChild className="mt-2 w-full">
-              <Link href="/dashboard/billing">Manage billing</Link>
+              <Link href="/pricing?from=dashboard">Manage plan</Link>
             </Button>
           </CardContent>
         </Card>
@@ -191,18 +191,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="grid gap-2">
             <Button asChild variant="outline" className="justify-start">
-              <Link href="/dashboard/files">
-                <ImageIcon className="mr-2 h-4 w-4" /> Files
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="justify-start">
               <Link href="/dashboard/history">
                 <History className="mr-2 h-4 w-4" /> History
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="justify-start">
-              <Link href="/dashboard/billing">
-                <CreditCard className="mr-2 h-4 w-4" /> Billing
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start">
