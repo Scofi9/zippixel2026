@@ -17,6 +17,24 @@ const navLinks = [
   { label: "Docs", href: "/docs" },
 ]
 
+const userButtonAppearance = {
+  elements: {
+    userButtonPopoverCard:
+      "w-72 rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl backdrop-blur-xl",
+    userButtonPopoverMain: "p-3",
+    userButtonPopoverFooter: "hidden",
+    userButtonPopoverActionButton:
+      "rounded-xl hover:bg-white/5 transition-colors",
+    userButtonPopoverActionButtonText: "text-sm text-white/80",
+    userButtonPopoverActionButtonIcon: "text-white/60",
+    userButtonPopoverUserPreview: "rounded-xl bg-white/5",
+    userButtonPopoverUserPreviewTextContainer: "gap-0.5",
+    userButtonPopoverUserPreviewMainIdentifier: "text-sm text-white",
+    userButtonPopoverUserPreviewSecondaryIdentifier: "text-xs text-white/60",
+    userButtonAvatarBox: "h-9 w-9 ring-1 ring-white/10",
+  },
+} as const
+
 export function Navbar() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -34,9 +52,7 @@ export function Navbar() {
               href={link.href}
               className={cn(
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground",
-                pathname === link.href
-                  ? "text-foreground"
-                  : "text-muted-foreground"
+                pathname === link.href ? "text-foreground" : "text-muted-foreground"
               )}
             >
               {link.label}
@@ -58,13 +74,16 @@ export function Navbar() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard">Dashboard</Link>
             </Button>
-
-            <UserButton afterSignOutUrl="/" />
           </SignedIn>
 
           <Button size="sm" asChild>
             <Link href="/compress">Compress Images</Link>
           </Button>
+
+          {/* Avatar en sağ */}
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
+          </SignedIn>
         </div>
 
         {/* Mobile menu */}
@@ -79,7 +98,6 @@ export function Navbar() {
             <SheetTitle className="sr-only">Navigation menu</SheetTitle>
 
             <div className="flex flex-col gap-6 pt-8">
-
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm text-muted-foreground">Theme</span>
                 <ThemeToggle />
@@ -104,7 +122,6 @@ export function Navbar() {
               </div>
 
               <div className="flex flex-col gap-2 px-3">
-
                 <SignedOut>
                   <Button variant="outline" asChild>
                     <Link href="/sign-in" onClick={() => setOpen(false)}>
@@ -119,10 +136,6 @@ export function Navbar() {
                       Dashboard
                     </Link>
                   </Button>
-
-                  <div className="px-2">
-                    <UserButton afterSignOutUrl="/" />
-                  </div>
                 </SignedIn>
 
                 <Button asChild>
@@ -131,11 +144,19 @@ export function Navbar() {
                   </Link>
                 </Button>
 
+                {/* Mobilde avatar da gösterelim */}
+                <SignedIn>
+                  <div className="mt-2 flex justify-end">
+                    <UserButton
+                      afterSignOutUrl="/"
+                      appearance={userButtonAppearance}
+                    />
+                  </div>
+                </SignedIn>
               </div>
             </div>
           </SheetContent>
         </Sheet>
-
       </nav>
     </header>
   )
