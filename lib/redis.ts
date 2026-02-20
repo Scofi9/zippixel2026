@@ -1,20 +1,32 @@
 import { Redis } from "@upstash/redis";
 
-let _redis: Redis | null = null;
-
+/**
+ * Create a Redis client from environment variables.
+ *
+ * IMPORTANT:
+ * - We intentionally DO NOT cache the client globally. In long-running Next.js servers,
+ *   stale env / token rotations can otherwise keep an old client alive.
+ * - We also trim values to avoid hidden whitespace issues.
+ */
 export function getRedis() {
-  // Öncelik: Upstash Redis (senin kullandığın)
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_URL;
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  const url = (
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    process.env.KV_URL ||
+    ""
+  ).trim();
+
+  const token = (
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    ""
+  ).trim();
 
   if (!url || !token) {
     throw new Error(
-      "Redis env missing. Set either UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN OR KV_REST_API_URL + KV_REST_API_TOKEN."
+      "Redis env missing. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (or KV_REST_API_URL + KV_REST_API_TOKEN)."
     );
   }
 
-  if (!_redis) _redis = new Redis({ url, token });
-  return _redis;
+  return new Redis({ url, token });
 }
