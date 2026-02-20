@@ -1,4 +1,5 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { createClerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 function monthKey(d = new Date()) {
@@ -10,29 +11,26 @@ function monthKey(d = new Date()) {
 export async function POST() {
   try {
     const { userId } = await auth();
-
     if (!userId) {
-      return NextResponse.json({ step: "auth", error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Step: get user
-    const user = await clerkClient.users.getUser(userId);
+    const clerk = createClerkClient({
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
 
+    const user = await clerk.users.getUser(userId);
     const md = (user.publicMetadata ?? {}) as Record<string, any>;
 
     const keyNow = monthKey();
     const keyStored = (md.usageMonthKey as string) ?? keyNow;
 
     let usage = Number(md.usageThisMonth ?? 0) || 0;
-
-    if (keyStored !== keyNow) {
-      usage = 0;
-    }
+    if (keyStored !== keyNow) usage = 0;
 
     const nextUsage = usage + 1;
 
-    // Step: update metadata
-    await clerkClient.users.updateUserMetadata(userId, {
+    await clerk.users.updateUserMetadata(userId, {
       publicMetadata: {
         ...md,
         usageThisMonth: nextUsage,
@@ -40,23 +38,11 @@ export async function POST() {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      userId,
-      usageThisMonth: nextUsage,
-      usageMonthKey: keyNow,
-    });
+    return NextResponse.json({ success: true, usageThisMonth: nextUsage });
   } catch (err: any) {
-    // En önemli kısım: hatayı JSON olarak geri döndür
+    console.error("usage/increment error:", err);
     return NextResponse.json(
-      {
-        step: "catch",
-        name: err?.name,
-        message: err?.message,
-        status: err?.status,
-        errors: err?.errors,
-        stack: String(err?.stack ?? "").slice(0, 800),
-      },
+      { error: err?.message ?? "Internal error" },
       { status: 500 }
     );
   }
