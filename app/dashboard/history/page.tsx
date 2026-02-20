@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Download, FileImage } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 import { getRedis } from "@/lib/redis";
@@ -12,19 +13,39 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function formatBytes(bytes: number) {
-  if (!bytes) return "0 B";
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
+  const b = Number(bytes || 0);
+  if (!b) return "0 B";
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), sizes.length - 1);
+  return (b / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
 }
 
 function formatDate(ts: number) {
+  const n = Number(ts);
+  if (!n) return "-";
   try {
-    return new Date(ts).toLocaleString();
+    return new Date(n).toLocaleString();
   } catch {
     return "-";
   }
 }
+
+function formatSavingsPercent(value: any) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  // normalde savings 24 ise "-24%" gösterir, eğer data zaten -24 gelirse "-24%" olarak kalsın
+  return n >= 0 ? `-${n}%` : `${n}%`;
+}
+
+type JobItem = {
+  id?: string;
+  fileName?: string;
+  outputFormat?: string;
+  originalBytes?: number;
+  compressedBytes?: number;
+  savingsPercent?: number;
+  createdAt?: number;
+};
 
 export default async function HistoryPage() {
   const { userId } = await auth();
@@ -38,11 +59,14 @@ export default async function HistoryPage() {
     );
   }
 
-  let jobs: any[] = [];
+  let jobs: JobItem[] = [];
   try {
     const redis = getRedis();
     const raw = await redis.lrange(`jobs:${userId}`, 0, 100);
-    jobs = raw.map((j: any) => (typeof j === "string" ? JSON.parse(j) : j));
+
+    jobs = raw
+      .map((j: any) => (typeof j === "string" ? JSON.parse(j) : j))
+      .filter(Boolean);
   } catch (e: any) {
     return (
       <div className="p-6">
@@ -83,42 +107,61 @@ export default async function HistoryPage() {
               </TableHeader>
 
               <TableBody>
-                {jobs.map((item, i) => (
-                  <TableRow key={item.id ?? i}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileImage className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{item.fileName}</span>
-                      </div>
-                    </TableCell>
+                {jobs.map((item, i) => {
+                  const id = item.id;
+                  const canDownload = Boolean(id);
 
-                    <TableCell>
-                      <Badge variant="secondary" className="text-xs">
-                        {(item.outputFormat || "WEBP").toString().toUpperCase()}
-                      </Badge>
-                    </TableCell>
+                  return (
+                    <TableRow key={id ?? i}>
+                      <TableCell>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileImage className="size-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm font-medium truncate">
+                            {item.fileName || "untitled"}
+                          </span>
+                        </div>
+                      </TableCell>
 
-                    <TableCell className="text-right font-mono text-xs">{formatBytes(item.originalBytes)}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{formatBytes(item.compressedBytes)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {(item.outputFormat || "WEBP").toString().toUpperCase()}
+                        </Badge>
+                      </TableCell>
 
-                    <TableCell className="text-right">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                        -{item.savingsPercent}%
-                      </Badge>
-                    </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {formatBytes(item.originalBytes || 0)}
+                      </TableCell>
 
-                    <TableCell className="text-right text-xs text-muted-foreground hidden sm:table-cell">
-                      {formatDate(item.createdAt)}
-                    </TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {formatBytes(item.compressedBytes || 0)}
+                      </TableCell>
 
-                    <TableCell>
-                      {/* Download'ı sonra Blob'a bağlarız. Şimdilik disabled */}
-                      <Button variant="ghost" size="icon-sm" disabled title="Download coming soon">
-                        <Download className="size-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell className="text-right">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                          {formatSavingsPercent(item.savingsPercent)}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="text-right text-xs text-muted-foreground hidden sm:table-cell">
+                        {formatDate(item.createdAt || 0)}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        {canDownload ? (
+                          <Button variant="ghost" size="icon-sm" title="Download" asChild>
+                            <Link href={`/api/download?id=${encodeURIComponent(id!)}`} prefetch={false}>
+                              <Download className="size-3.5" />
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon-sm" disabled title="No id for download">
+                            <Download className="size-3.5" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
