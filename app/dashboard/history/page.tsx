@@ -33,7 +33,7 @@ function formatDate(ts: number) {
 function formatSavingsPercent(value: any) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "-";
-  // normalde savings 24 ise "-24%" gösterir, eğer data zaten -24 gelirse "-24%" olarak kalsın
+  // savings 24 ise "-24%" göster, data zaten -24 gelirse "-24%" olarak kalsın
   return n >= 0 ? `-${n}%` : `${n}%`;
 }
 
@@ -107,8 +107,8 @@ export default async function HistoryPage() {
               </TableHeader>
 
               <TableBody>
-                {jobs.map((item, i) => {
-                  const id = item.id;
+                {jobs.map((job, i) => {
+                  const id = job.id;
                   const canDownload = Boolean(id);
 
                   return (
@@ -117,33 +117,33 @@ export default async function HistoryPage() {
                         <div className="flex items-center gap-2 min-w-0">
                           <FileImage className="size-4 text-muted-foreground shrink-0" />
                           <span className="text-sm font-medium truncate">
-                            {item.fileName || "untitled"}
+                            {job.fileName || "untitled"}
                           </span>
                         </div>
                       </TableCell>
 
                       <TableCell>
                         <Badge variant="secondary" className="text-xs">
-                          {(item.outputFormat || "WEBP").toString().toUpperCase()}
+                          {(job.outputFormat || "WEBP").toString().toUpperCase()}
                         </Badge>
                       </TableCell>
 
                       <TableCell className="text-right font-mono text-xs">
-                        {formatBytes(item.originalBytes || 0)}
+                        {formatBytes(job.originalBytes || 0)}
                       </TableCell>
 
                       <TableCell className="text-right font-mono text-xs">
-                        {formatBytes(item.compressedBytes || 0)}
+                        {formatBytes(job.compressedBytes || 0)}
                       </TableCell>
 
                       <TableCell className="text-right">
                         <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                          {formatSavingsPercent(item.savingsPercent)}
+                          {formatSavingsPercent(job.savingsPercent)}
                         </Badge>
                       </TableCell>
 
                       <TableCell className="text-right text-xs text-muted-foreground hidden sm:table-cell">
-                        {formatDate(item.createdAt || 0)}
+                        {formatDate(job.createdAt || 0)}
                       </TableCell>
 
                       <TableCell className="text-right">
