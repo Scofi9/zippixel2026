@@ -8,13 +8,10 @@ export function getRedis() {
 
   if (!url || !token) {
     throw new Error(
-      "Upstash env missing: UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN. Vercel'de Preview + Production envlerini kontrol et."
+      "Upstash env missing: UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN (Vercel Preview + Production)."
     );
   }
 
-  if (!_redis) {
-    _redis = new Redis({ url, token });
-  }
-
+  if (!_redis) _redis = new Redis({ url, token });
   return _redis;
 }

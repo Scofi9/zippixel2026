@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { redis } from "@/lib/redis";
+import { getRedis } from "@/lib/redis";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const { userId } = await auth();
@@ -9,9 +12,10 @@ export async function GET() {
     return NextResponse.json({ jobs: [] });
   }
 
-  const jobs = await redis.lrange(`jobs:${userId}`, 0, 100);
+  const redis = getRedis();
+  const raw = await redis.lrange(`jobs:${userId}`, 0, 100);
 
-  return NextResponse.json({
-    jobs: jobs.map((j: any) => JSON.parse(j)),
-  });
+  const jobs = raw.map((j: any) => (typeof j === "string" ? JSON.parse(j) : j));
+
+  return NextResponse.json({ jobs });
 }

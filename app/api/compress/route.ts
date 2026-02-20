@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       id: crypto.randomUUID(),
       userId,
       fileName: file.name,
+      outputFormat: "WEBP",
       originalBytes: inputBuffer.length,
       compressedBytes: outputBuffer.length,
       savingsPercent: Math.round((1 - outputBuffer.length / inputBuffer.length) * 100),
@@ -43,7 +44,6 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("Compress error:", err);
-
     return NextResponse.json(
       { error: "Compression failed", detail: err?.message || String(err) },
       { status: 500 }
