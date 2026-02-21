@@ -570,9 +570,6 @@ export const DICT = {
     admin: "Admin",
   },
 
-  // For the remaining locales we keep a high-quality UI by falling back to English
-  // (strings still show correctly; you can extend translations later safely).
-
 } as const;
 
 export type I18nKey = keyof typeof DICT.en;
