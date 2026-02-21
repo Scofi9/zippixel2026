@@ -58,10 +58,43 @@ function isLimitReachedError(status: number, bodyText: string) {
 
 function BeforeAfter({ original, compressed }: { original: string; compressed: string }) {
   const [pct, setPct] = useState(50);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef(false);
+
+  const setFromClientX = (clientX: number) => {
+    const el = boxRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const raw = ((clientX - rect.left) / rect.width) * 100;
+    const next = Math.max(0, Math.min(100, raw));
+    setPct(next);
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    // capture so it keeps dragging even if pointer leaves the line
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+    setFromClientX(e.clientX);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    setFromClientX(e.clientX);
+  };
+
+  const onPointerUp = () => {
+    draggingRef.current = false;
+  };
 
   return (
     <div className="w-full">
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-border/50 bg-muted">
+      <div
+        ref={boxRef}
+        className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-border/50 bg-muted"
+      >
         {/* Compressed */}
         <img
           src={compressed}
@@ -83,8 +116,12 @@ function BeforeAfter({ original, compressed }: { original: string; compressed: s
         </div>
 
         <div
-          className="absolute inset-y-0"
+          className="absolute inset-y-0 cursor-ew-resize touch-none"
           style={{ left: `${pct}%`, transform: "translateX(-1px)" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
         >
           <div className="relative h-full w-[2px] bg-white/70 dark:bg-white/60">
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
