@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getRedis } from "@/lib/redis";
-import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,23 +14,6 @@ type Job = {
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth();
-
-
-const ip = getClientIp(req);
-const rl = await rateLimit({
-  key: userId ? `dl:u:${userId}` : `dl:ip:${ip}`,
-  limit: userId ? 240 : 60,
-  windowSeconds: 60,
-});
-
-if (!rl.ok) {
-  return NextResponse.json(
-    { error: "RATE_LIMITED", resetSeconds: rl.resetSeconds, limit: rl.limit },
-    { status: 429, headers: { "Retry-After": String(rl.resetSeconds) } }
-  );
-}
-
-
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const id = new URL(req.url).searchParams.get("id");

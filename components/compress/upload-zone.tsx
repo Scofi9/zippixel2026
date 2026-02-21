@@ -549,7 +549,7 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
                         <Badge variant="secondary">{stageLabel(r.stage)}</Badge>
                       ) : null}
                       {r.status === "done" ? (
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">{t("done")}</Badge>
+                        <Badge className="bg-primary/15 text-primary border border-primary/25">{t("done")}</Badge>
                       ) : null}
                       {r.status === "error" ? (
                         <Badge className="bg-destructive/15 text-destructive border border-destructive/25">{r.errorMsg ?? "Error"}</Badge>

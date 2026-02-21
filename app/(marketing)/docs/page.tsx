@@ -68,12 +68,12 @@ export default function DocsPage() {
                   bg-white/5 backdrop-blur
                   transition-all duration-300
                   hover:-translate-y-1 hover:hover:text-primary-400/40 hover:bg-white/10
-                  hover:shadow-2xl hover:shadow-emerald-500/10
+                  hover:shadow-2xl hover:shadow-primary/15
                 "
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/15">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
                       <s.icon className="size-5 text-primary-400" />
                     </div>
 
@@ -93,7 +93,7 @@ export default function DocsPage() {
                     Open <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-0.5" />
                   </div>
 
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 </CardContent>
               </Card>
             </Link>

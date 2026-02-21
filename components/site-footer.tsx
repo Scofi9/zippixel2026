@@ -15,11 +15,13 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 md:justify-end">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+          <div className="text-xs text-muted-foreground md:mr-2">
             © {new Date().getFullYear()} ZipPixel
           </div>
-          <SupportWidget />
+          <div className="w-full md:w-auto">
+            <SupportWidget />
+          </div>
         </div>
       </div>
     </footer>

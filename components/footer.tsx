@@ -27,7 +27,6 @@ const footerSections = [
       { label: "Reduce Image Size", href: "/compress" },
       { label: "Image Compressor", href: "/compress" },
       { label: "API Docs", href: "/docs" },
-      { label: "Tools", href: "/tools" },
       { label: "Support", href: "/docs" },
     ],
   },
@@ -71,7 +70,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-6">
             <Link
-              href="/privacy"
+              href="/docs"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Privacy

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { auth, createClerkClient } from "@clerk/nextjs/server";
 import { getRedis } from "@/lib/redis";
-import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { PLANS, type PlanKey } from "@/lib/plans";
 
 export const runtime = "nodejs";
@@ -82,34 +81,6 @@ export async function POST(req: Request) {
     // Public endpoint: compression should work even if user isn't signed in.
     // If signed in, we apply plan limits & record history.
     const { userId } = await auth();
-
-
-const ip = getClientIp(req);
-
-// Abuse protection: keep the public endpoint usable.
-// Signed-in users get a higher limit than anonymous.
-const rl = await rateLimit({
-  key: userId ? `u:${userId}` : `ip:${ip}`,
-  limit: userId ? 120 : 30, // per minute
-  windowSeconds: 60,
-});
-
-if (!rl.ok) {
-  return NextResponse.json(
-    { error: "RATE_LIMITED", resetSeconds: rl.resetSeconds, limit: rl.limit },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": String(rl.resetSeconds),
-        "X-RateLimit-Limit": String(rl.limit),
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": String(rl.resetSeconds),
-      },
-    }
-  );
-}
-
-
 
     const redis = (() => {
       try {
