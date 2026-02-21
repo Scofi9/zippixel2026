@@ -1,90 +1,83 @@
-import type { Metadata } from "next"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
+import type { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { isAdminUser } from "@/lib/is-admin";
+import { getRedis } from "@/lib/redis";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
-export const metadata: Metadata = { title: "Admin — Settings" }
+export const metadata: Metadata = { title: "Admin — Settings" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  if (!isAdminUser(user)) redirect("/dashboard");
+
+  let maintenance = false;
+  let registrations = true;
+
+  try {
+    const redis = getRedis();
+    const [m, r] = await Promise.all([
+      redis.get<number | string>("config:maintenance"),
+      redis.get<number | string>("config:registrations"),
+    ]);
+    maintenance = String(m ?? "0") === "1";
+    registrations = String(r ?? "1") !== "0";
+  } catch {
+    // ignore
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Platform configuration and settings.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Read-only view of runtime settings (stored in Redis).
+        </p>
       </div>
 
       <Card className="border-border/50 bg-card/50">
         <CardHeader>
-          <CardTitle className="text-base">General Settings</CardTitle>
-          <CardDescription>Core platform configuration.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="siteName">Site Name</Label>
-              <Input id="siteName" defaultValue="ZipPixel" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="supportEmail">Support Email</Label>
-              <Input id="supportEmail" type="email" defaultValue="support@zippixel.xyz" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="maxFileSize">Max File Size (MB)</Label>
-              <Input id="maxFileSize" type="number" defaultValue="50" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="maxBatch">Max Batch Size</Label>
-              <Input id="maxBatch" type="number" defaultValue="100" />
-            </div>
-          </div>
-          <Button className="mt-6" size="sm">Save Settings</Button>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/50 bg-card/50">
-        <CardHeader>
           <CardTitle className="text-base">Feature Flags</CardTitle>
-          <CardDescription>Toggle platform features.</CardDescription>
+          <CardDescription>Current platform flags</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-foreground">AVIF Support</div>
-                <div className="text-xs text-muted-foreground">Enable AVIF format for all users.</div>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium text-foreground">API Rate Limiting</div>
-                <div className="text-xs text-muted-foreground">Enable rate limiting on the public API.</div>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
                 <div className="text-sm font-medium text-foreground">Maintenance Mode</div>
-                <div className="text-xs text-muted-foreground">Show maintenance page to all users.</div>
+                <div className="text-xs text-muted-foreground">If enabled, show maintenance page to all users.</div>
               </div>
-              <Switch />
+              <Badge variant={maintenance ? "default" : "secondary"}>{maintenance ? "ON" : "OFF"}</Badge>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-foreground">New User Registration</div>
-                <div className="text-xs text-muted-foreground">Allow new user sign-ups.</div>
+                <div className="text-xs text-muted-foreground">Allow new sign-ups.</div>
               </div>
-              <Switch defaultChecked />
+              <Badge variant={registrations ? "secondary" : "outline"}>{registrations ? "ENABLED" : "DISABLED"}</Badge>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-border/50 bg-card/50">
+        <CardHeader>
+          <CardTitle className="text-base">Server</CardTitle>
+          <CardDescription>Environment checks</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Redis: {process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL ? "configured" : "missing"}</li>
+            <li>Clerk secret: {process.env.CLERK_SECRET_KEY ? "configured" : "missing"}</li>
+          </ul>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

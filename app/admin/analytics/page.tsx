@@ -1,24 +1,99 @@
-import type { Metadata } from "next"
-import { TrendingUp, Users, ImageDown, Globe } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { AdminAnalyticsCharts } from "@/components/admin/analytics-charts"
+import type { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { TrendingUp, Users, ImageDown, Globe } from "lucide-react";
+import { isAdminUser } from "@/lib/is-admin";
+import { getRedis } from "@/lib/redis";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AdminAnalyticsCharts, type DailyPoint, type FormatPoint } from "@/components/admin/analytics-charts";
 
-export const metadata: Metadata = { title: "Admin — Analytics" }
+export const metadata: Metadata = { title: "Admin — Analytics" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const metrics = [
-  { label: "Daily Active Users", value: "3,247", change: "+8.4%", icon: Users },
-  { label: "Images Today", value: "42,180", change: "+22.1%", icon: ImageDown },
-  { label: "Conversion Rate", value: "4.2%", change: "+0.3%", icon: TrendingUp },
-  { label: "Global Regions", value: "32", change: "+2", icon: Globe },
-]
+function dayKey(d = new Date()) {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-export default function AdminAnalyticsPage() {
+function shortDow(d: Date) {
+  return d.toLocaleDateString(undefined, { weekday: "short" });
+}
+
+export default async function AdminAnalyticsPage() {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  if (!isAdminUser(user)) redirect("/dashboard");
+
+  const redis = getRedis();
+
+  // Build last 7 days (UTC)
+  const today = new Date();
+  const days: { dk: string; label: string }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    days.push({ dk: dayKey(d), label: shortDow(d) });
+  }
+
+  const pvPromises = days.map((x) => redis.get<number>(`analytics:pv:${x.dk}`));
+  const uvPromises = days.map((x) => redis.scard(`analytics:uv:${x.dk}`));
+  const compPromises = days.map((x) => redis.get<number>(`daily:compressions:${x.dk}`));
+
+  const [pvArr, uvArr, compArr, totalPv, totalComp, fmtWebp, fmtAvif, fmtJpeg, fmtPng, fmtOrig] = await Promise.all([
+    Promise.all(pvPromises),
+    Promise.all(uvPromises),
+    Promise.all(compPromises),
+    redis.get<number>("analytics:pv:total"),
+    redis.get<number>("global:compressions"),
+    redis.get<number>("global:format:WEBP"),
+    redis.get<number>("global:format:AVIF"),
+    redis.get<number>("global:format:JPEG"),
+    redis.get<number>("global:format:PNG"),
+    redis.get<number>("global:format:ORIGINAL"),
+  ]);
+
+  const dailyData: DailyPoint[] = days.map((d, idx) => ({
+    day: d.label,
+    dau: Number(uvArr[idx] || 0),
+    compressions: Number(compArr[idx] || 0),
+  }));
+
+  const totalFmt =
+    Number(fmtWebp || 0) +
+    Number(fmtAvif || 0) +
+    Number(fmtJpeg || 0) +
+    Number(fmtPng || 0) +
+    Number(fmtOrig || 0);
+
+  const pct = (n: number) => (totalFmt > 0 ? Math.round((n / totalFmt) * 100) : 0);
+
+  const formatData: FormatPoint[] = [
+    { name: "WebP", value: pct(Number(fmtWebp || 0)), color: "oklch(0.75 0.18 155)" },
+    { name: "AVIF", value: pct(Number(fmtAvif || 0)), color: "oklch(0.828 0.189 84.429)" },
+    { name: "JPG", value: pct(Number(fmtJpeg || 0)), color: "oklch(0.6 0.118 184.704)" },
+    { name: "PNG", value: pct(Number(fmtPng || 0)), color: "oklch(0.55 0.07 260)" },
+  ].filter((x) => x.value > 0);
+
+  const pv7 = pvArr.reduce((a, b) => a + Number(b || 0), 0);
+  const uv7 = uvArr.reduce((a, b) => a + Number(b || 0), 0);
+  const comp7 = compArr.reduce((a, b) => a + Number(b || 0), 0);
+
+  const metrics = [
+    { label: "Uniques (7d)", value: uv7.toLocaleString(), change: "live", icon: Users },
+    { label: "Pageviews (7d)", value: pv7.toLocaleString(), change: "live", icon: Globe },
+    { label: "Compressions (7d)", value: comp7.toLocaleString(), change: "live", icon: ImageDown },
+    { label: "All-time PV", value: Number(totalPv || 0).toLocaleString(), change: "total", icon: TrendingUp },
+  ];
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Platform analytics and growth metrics.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Real metrics from Upstash Redis.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -27,7 +102,9 @@ export default function AdminAnalyticsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <metric.icon className="size-5 text-muted-foreground" />
-                <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">{metric.change}</Badge>
+                <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                  {metric.change}
+                </Badge>
               </div>
               <div className="mt-3 text-2xl font-bold text-foreground">{metric.value}</div>
               <div className="mt-1 text-sm text-muted-foreground">{metric.label}</div>
@@ -36,7 +113,15 @@ export default function AdminAnalyticsPage() {
         ))}
       </div>
 
-      <AdminAnalyticsCharts />
+      <AdminAnalyticsCharts dailyData={dailyData} formatData={formatData.length ? formatData : [{ name: "—", value: 0, color: "oklch(0.65 0 0)" }]} />
+
+      <Card className="border-border/50 bg-card/50">
+        <CardContent className="pt-6">
+          <div className="text-sm text-muted-foreground">
+            Total compressions (lifetime): <span className="font-medium text-foreground">{Number(totalComp || 0).toLocaleString()}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

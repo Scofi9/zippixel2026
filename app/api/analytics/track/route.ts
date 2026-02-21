@@ -52,6 +52,7 @@ export async function POST(req: Request) {
     const totalPvKey = "analytics:pv:total";
     const totalLoginKey = "analytics:login:total";
     const eventsKey = "analytics:events";
+    const adminEventsKey = "admin:events";
 
     const now = Date.now();
     const event = {
@@ -60,12 +61,22 @@ export async function POST(req: Request) {
       in: Boolean(userId),
     };
 
+    const adminEvent = {
+      t: now,
+      type: "pageview",
+      path,
+      in: Boolean(userId),
+      userId: userId || null,
+    };
+
     const ops: Promise<any>[] = [];
     ops.push(redis.incr(pvKey));
     ops.push(redis.incr(totalPvKey));
     ops.push(redis.sadd(uvKey, visitorId));
     ops.push(redis.lpush(eventsKey, JSON.stringify(event)));
     ops.push(redis.ltrim(eventsKey, 0, 199));
+    ops.push(redis.lpush(adminEventsKey, JSON.stringify(adminEvent)));
+    ops.push(redis.ltrim(adminEventsKey, 0, 199));
 
     if (userId) {
       ops.push(redis.incr(loginKey));

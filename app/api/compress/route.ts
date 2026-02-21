@@ -27,6 +27,13 @@ function monthKey(d = new Date()) {
   return `${y}-${m}`;
 }
 
+function dayKey(d = new Date()) {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function safePlanKey(raw: any): PlanKey {
   return (["free", "basic", "pro", "plus"] as const).includes(raw) ? raw : "free";
 }
@@ -278,8 +285,36 @@ candidates.sort((a, b) => a.buf.length - b.buf.length);
       try {
         const originalBytes = inputBuffer.length;
         const savedBytes = Math.max(0, originalBytes - best.buf.length);
-        await redis.incr("global:compressions");
-        await redis.incrby("global:savedBytes", savedBytes);
+        const dk = dayKey();
+        const fmtKey = best.fmt;
+
+        const ops: Promise<any>[] = [];
+        // Lifetime
+        ops.push(redis.incr("global:compressions"));
+        ops.push(redis.incrby("global:savedBytes", savedBytes));
+        ops.push(redis.incr(`global:format:${fmtKey}`));
+
+        // Daily
+        ops.push(redis.incr(`daily:compressions:${dk}`));
+        ops.push(redis.incrby(`daily:savedBytes:${dk}`, savedBytes));
+        ops.push(redis.incr(`daily:format:${dk}:${fmtKey}`));
+
+        // Recent activity feed for admin (keep short)
+        const event = {
+          t: Date.now(),
+          type: "compress",
+          userId: userId || null,
+          file: file.name,
+          fmt: fmtKey,
+          originalBytes,
+          compressedBytes: best.buf.length,
+          savedBytes,
+          savingsPercent: Math.max(0, Math.round((1 - best.buf.length / originalBytes) * 100)),
+        };
+        ops.push(redis.lpush("admin:events", JSON.stringify(event)));
+        ops.push(redis.ltrim("admin:events", 0, 199));
+
+        await Promise.allSettled(ops);
       } catch {
         // ignore metrics errors
       }

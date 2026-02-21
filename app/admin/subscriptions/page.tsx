@@ -1,6 +1,10 @@
-import type { Metadata } from "next"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import type { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { isAdminUser } from "@/lib/is-admin";
+import { getAdminUserList, safePlanLabel } from "@/lib/admin-data";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -8,35 +12,84 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
-export const metadata: Metadata = { title: "Admin — Subscriptions" }
+export const metadata: Metadata = { title: "Admin — Subscriptions" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const planSummary = [
-  { plan: "Free", users: 4215, percentage: "33%" },
-  { plan: "Pro", users: 7180, percentage: "56%" },
-  { plan: "Enterprise", users: 1452, percentage: "11%" },
-]
+function fmtDate(ms?: number | null) {
+  if (!ms) return "—";
+  try {
+    return new Date(ms).toLocaleDateString();
+  } catch {
+    return "—";
+  }
+}
 
-const subscriptions = [
-  { user: "sarah@raycast.com", plan: "Enterprise", status: "Active", amount: "$499/mo", started: "Jan 15, 2026", renewal: "Feb 15, 2026" },
-  { user: "marcus@verifiable.io", plan: "Pro", status: "Active", amount: "$12/mo", started: "Dec 3, 2025", renewal: "Mar 3, 2026" },
-  { user: "emily@prisma.io", plan: "Pro", status: "Active", amount: "$12/mo", started: "Nov 20, 2025", renewal: "Feb 20, 2026" },
-  { user: "james@agency.io", plan: "Enterprise", status: "Active", amount: "$499/mo", started: "Sep 5, 2025", renewal: "Mar 5, 2026" },
-  { user: "lisa@startup.co", plan: "Pro", status: "Cancelled", amount: "$12/mo", started: "Oct 10, 2025", renewal: "N/A" },
-  { user: "robert@bigcorp.com", plan: "Enterprise", status: "Active", amount: "$499/mo", started: "Aug 22, 2025", renewal: "Feb 22, 2026" },
-]
+export default async function AdminSubscriptionsPage() {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  if (!isAdminUser(user)) redirect("/dashboard");
 
-export default function AdminSubscriptionsPage() {
+  const res = await getAdminUserList(200);
+  if (!res.ok) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Subscriptions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Subscription management.</p>
+        </div>
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <CardTitle className="text-base">Server configuration needed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{res.error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const users = res.users;
+  const planCounts = users.reduce(
+    (acc, u) => {
+      const md = (u.publicMetadata ?? {}) as Record<string, any>;
+      const plan = safePlanLabel(md.plan);
+      acc[plan] = (acc[plan] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const paid = users
+    .filter((u) => {
+      const md = (u.publicMetadata ?? {}) as Record<string, any>;
+      const plan = safePlanLabel(md.plan);
+      return plan === "Basic" || plan === "Pro" || plan === "Plus";
+    })
+    .sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+
+  const total = users.length || 1;
+  const summary = ["Free", "Basic", "Pro", "Plus"].map((p) => {
+    const n = planCounts[p] || 0;
+    const pct = Math.round((n / total) * 100);
+    return { plan: p, users: n, percentage: `${pct}%` };
+  });
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Subscriptions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Subscription management and plan distribution.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Real plan distribution from Clerk <span className="font-medium">publicMetadata.plan</span>.
+          (Payments provider can be wired later.)
+        </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {planSummary.map((p) => (
+      <div className="grid gap-4 sm:grid-cols-4">
+        {summary.map((p) => (
           <Card key={p.plan} className="border-border/50 bg-card/50">
             <CardContent className="pt-6">
               <div className="text-sm text-muted-foreground">{p.plan} Plan</div>
@@ -49,8 +102,8 @@ export default function AdminSubscriptionsPage() {
 
       <Card className="border-border/50 bg-card/50">
         <CardHeader>
-          <CardTitle className="text-base">Subscription List</CardTitle>
-          <CardDescription>All paid subscriptions</CardDescription>
+          <CardTitle className="text-base">Paid Users</CardTitle>
+          <CardDescription>Users on Basic / Pro / Plus</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-auto">
@@ -60,33 +113,46 @@ export default function AdminSubscriptionsPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
                   <TableHead className="hidden sm:table-cell">Started</TableHead>
-                  <TableHead className="hidden md:table-cell">Renewal</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.map((sub) => (
-                  <TableRow key={sub.user}>
-                    <TableCell className="text-sm font-medium">{sub.user}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={sub.plan === "Enterprise" ? "bg-primary/10 text-primary" : ""}>{sub.plan}</Badge>
+                {paid.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                      No paid users yet.
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={sub.status === "Active" ? "secondary" : "outline"} className={sub.status === "Active" ? "bg-primary/10 text-primary" : ""}>
-                        {sub.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm">{sub.amount}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{sub.started}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{sub.renewal}</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  paid.map((u) => {
+                    const email = u.emailAddresses?.[0]?.emailAddress || "—";
+                    const name = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || email;
+                    const md = (u.publicMetadata ?? {}) as Record<string, any>;
+                    const plan = safePlanLabel(md.plan);
+                    const status = u.banned ? "Banned" : "Active";
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="text-sm font-medium">{name}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">
+                            {plan}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={status === "Active" ? "secondary" : "outline"}>{status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                          {fmtDate(u.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

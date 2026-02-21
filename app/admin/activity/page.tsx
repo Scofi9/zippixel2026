@@ -1,6 +1,10 @@
-import type { Metadata } from "next"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import type { Metadata } from "next";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { isAdminUser } from "@/lib/is-admin";
+import { getRecentAdminEvents, formatBytes } from "@/lib/admin-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -8,36 +12,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
-export const metadata: Metadata = { title: "Admin — Activity Logs" }
+export const metadata: Metadata = { title: "Admin — Activity Logs" };
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const activities = [
-  { event: "Image compressed", user: "sarah@raycast.com", details: "hero-banner.jpg (3.2 MB -> 680 KB)", type: "compress", time: "2 min ago" },
-  { event: "User signed up", user: "new-user@gmail.com", details: "Free plan", type: "auth", time: "8 min ago" },
-  { event: "Plan upgraded", user: "marcus@verifiable.io", details: "Free -> Pro", type: "billing", time: "15 min ago" },
-  { event: "API key generated", user: "emily@prisma.io", details: "New API key created", type: "api", time: "32 min ago" },
-  { event: "Batch compression", user: "james@agency.io", details: "24 images processed", type: "compress", time: "1 hour ago" },
-  { event: "User signed up", user: "designer@studio.co", details: "Pro plan trial", type: "auth", time: "1.5 hours ago" },
-  { event: "Webhook configured", user: "robert@bigcorp.com", details: "POST endpoint added", type: "api", time: "2 hours ago" },
-  { event: "Subscription cancelled", user: "lisa@startup.co", details: "Pro plan", type: "billing", time: "3 hours ago" },
-  { event: "Image compressed", user: "anna@design.studio", details: "logo.png (1.8 MB -> 240 KB)", type: "compress", time: "4 hours ago" },
-  { event: "Password changed", user: "david@acme.com", details: "Security update", type: "auth", time: "5 hours ago" },
-]
-
-const typeColors: Record<string, string> = {
-  compress: "bg-primary/10 text-primary",
-  auth: "bg-chart-2/10 text-chart-2",
-  billing: "bg-chart-4/10 text-chart-4",
-  api: "bg-chart-3/10 text-chart-3",
+function timeAgo(ts: number) {
+  const sec = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
 }
 
-export default function AdminActivityPage() {
+export default async function AdminActivityPage() {
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
+  if (!isAdminUser(user)) redirect("/dashboard");
+
+  const { events, userMap } = await getRecentAdminEvents(80);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Activity Logs</h1>
-        <p className="mt-1 text-sm text-muted-foreground">System-wide activity and event logs.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Real events captured from compressions and first-party tracking.
+        </p>
       </div>
 
       <Card className="border-border/50 bg-card/50">
@@ -57,24 +62,63 @@ export default function AdminActivityPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activities.map((activity, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm font-medium">{activity.event}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={typeColors[activity.type] || ""}>
-                        {activity.type}
-                      </Badge>
+                {events.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                      No events yet. Compress an image or open the site to generate activity.
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{activity.user}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{activity.details}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{activity.time}</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  events.map((e, i) => {
+                    const uid = "userId" in e ? e.userId : null;
+                    const u = uid ? userMap.get(uid) : null;
+                    const userLabel = uid ? (u?.email || u?.name || uid.slice(0, 10) + "…") : "guest";
+
+                    if (e.type === "compress") {
+                      return (
+                        <TableRow key={`${e.t}-${i}`}>
+                          <TableCell className="text-sm font-medium">Image compressed</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              compress
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                            {userLabel}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                            {e.file} ({formatBytes(e.originalBytes)} → {formatBytes(e.compressedBytes)}) · {e.fmt}
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">
+                            {timeAgo(e.t)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    // pageview
+                    return (
+                      <TableRow key={`${e.t}-${i}`}>
+                        <TableCell className="text-sm font-medium">Page view</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={e.in ? "bg-primary/10 text-primary" : ""}>
+                            {e.in ? "signed-in" : "guest"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                          {userLabel}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{e.path}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(e.t)}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

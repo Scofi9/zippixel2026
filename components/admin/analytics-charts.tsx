@@ -14,24 +14,10 @@ import {
   Cell,
 } from "recharts"
 
-const dailyData = [
-  { day: "Mon", dau: 2800, compressions: 35000 },
-  { day: "Tue", dau: 3100, compressions: 38000 },
-  { day: "Wed", dau: 3400, compressions: 42000 },
-  { day: "Thu", dau: 3200, compressions: 40000 },
-  { day: "Fri", dau: 3500, compressions: 44000 },
-  { day: "Sat", dau: 2400, compressions: 28000 },
-  { day: "Sun", dau: 2100, compressions: 24000 },
-]
+export type DailyPoint = { day: string; dau: number; compressions: number }
+export type FormatPoint = { name: string; value: number; color: string }
 
-const formatData = [
-  { name: "JPG", value: 45, color: "oklch(0.75 0.18 155)" },
-  { name: "PNG", value: 28, color: "oklch(0.6 0.118 184.704)" },
-  { name: "WebP", value: 18, color: "oklch(0.55 0.07 260)" },
-  { name: "AVIF", value: 9, color: "oklch(0.828 0.189 84.429)" },
-]
-
-export function AdminAnalyticsCharts() {
+export function AdminAnalyticsCharts({ dailyData, formatData }: { dailyData: DailyPoint[]; formatData: FormatPoint[] }) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <Card className="border-border/50 bg-card/50 lg:col-span-2">
