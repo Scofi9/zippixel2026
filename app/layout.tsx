@@ -3,7 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
 import { I18nProvider } from "@/components/i18n-provider"
-import { SupportWidget } from "@/components/support-widget"
+import { SiteFooter } from "@/components/site-footer"
 import "./globals.css"
 
 const inter = Inter({
@@ -80,7 +80,12 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            <I18nProvider>{children}<SupportWidget /></I18nProvider>
+            <I18nProvider>
+              <div className=\"min-h-screen flex flex-col\">
+                <div className=\"flex-1\">{children}</div>
+                <SiteFooter />
+              </div>
+            </I18nProvider>
           </ThemeProvider>
         </body>
       </html>

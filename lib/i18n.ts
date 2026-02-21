@@ -4,12 +4,7 @@ export type Lang =
   | "de"
   | "fr"
   | "es"
-  | "ru"
-  | "zh"
-  | "ar"
-  | "pt"
-  | "it"
-  | "ja";
+  | "ru";
 
 export const LANGS: Array<{ code: Lang; label: string }> = [
   { code: "en", label: "EN" },
@@ -18,11 +13,6 @@ export const LANGS: Array<{ code: Lang; label: string }> = [
   { code: "fr", label: "FR" },
   { code: "es", label: "ES" },
   { code: "ru", label: "RU" },
-  { code: "pt", label: "PT" },
-  { code: "it", label: "IT" },
-  { code: "ja", label: "JA" },
-  { code: "zh", label: "中文" },
-  { code: "ar", label: "AR" },
 ];
 
 export const DICT = {
@@ -98,6 +88,8 @@ export const DICT = {
     savings: "Savings",
     status: "Status",
     download: "Download",
+    show_compare: "Show compare",
+    hide_compare: "Hide compare",
     working: "Working",
     done: "Done",
     no_files: "No files yet.",
@@ -190,6 +182,8 @@ export const DICT = {
     savings: "Kazanç",
     status: "Durum",
     download: "İndir",
+    show_compare: "Karşılaştır",
+    hide_compare: "Kapat",
     working: "İşleniyor",
     done: "Bitti",
     no_files: "Henüz dosya yok.",
@@ -280,6 +274,8 @@ export const DICT = {
     savings: "Ersparnis",
     status: "Status",
     download: "Download",
+    show_compare: "Vergleichen",
+    hide_compare: "Schließen",
     working: "Verarbeitung",
     done: "Fertig",
     no_files: "Noch keine Dateien.",
@@ -369,6 +365,8 @@ export const DICT = {
     savings: "Gain",
     status: "Statut",
     download: "Télécharger",
+    show_compare: "Comparer",
+    hide_compare: "Fermer",
     working: "Traitement",
     done: "Terminé",
     no_files: "Aucun fichier.",
@@ -458,6 +456,8 @@ export const DICT = {
     savings: "Ahorro",
     status: "Estado",
     download: "Descargar",
+    show_compare: "Comparar",
+    hide_compare: "Cerrar",
     working: "Procesando",
     done: "Listo",
     no_files: "Sin archivos.",
@@ -547,6 +547,8 @@ export const DICT = {
     savings: "Экономия",
     status: "Статус",
     download: "Скачать",
+    show_compare: "Сравнить",
+    hide_compare: "Скрыть",
     working: "Обработка",
     done: "Готово",
     no_files: "Файлов пока нет.",
@@ -570,11 +572,7 @@ export const DICT = {
 
   // For the remaining locales we keep a high-quality UI by falling back to English
   // (strings still show correctly; you can extend translations later safely).
-  pt: {} as any,
-  it: {} as any,
-  ja: {} as any,
-  zh: {} as any,
-  ar: {} as any,
+
 } as const;
 
 export type I18nKey = keyof typeof DICT.en;

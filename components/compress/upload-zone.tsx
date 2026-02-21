@@ -86,7 +86,13 @@ function BeforeAfter({ original, compressed }: { original: string; compressed: s
           className="absolute inset-y-0"
           style={{ left: `${pct}%`, transform: "translateX(-1px)" }}
         >
-          <div className="h-full w-[2px] bg-white/70 dark:bg-white/60" />
+          <div className="relative h-full w-[2px] bg-white/70 dark:bg-white/60">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="grid size-8 place-items-center rounded-full border border-white/40 bg-black/40 backdrop-blur-md shadow-lg">
+                <Sparkles className="size-4 text-white/90" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="absolute left-3 top-3 flex gap-2">
@@ -95,14 +101,18 @@ function BeforeAfter({ original, compressed }: { original: string; compressed: s
         </div>
       </div>
 
-      <div className="mt-3">
-        <input
-          type="range"
+      <div className="mt-4">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Original</span>
+          <span>Compressed</span>
+        </div>
+        <Slider
+          value={[pct]}
+          onValueChange={(v) => setPct(v[0] ?? 50)}
           min={0}
           max={100}
-          value={pct}
-          onChange={(e) => setPct(Number(e.target.value))}
-          className="w-full accent-primary"
+          step={1}
+          className="mt-2"
           aria-label="Compare"
         />
       </div>
@@ -281,6 +291,7 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
     }));
 
     // prepend newest
+    setOpenCompareId(null);
     setResults((prev) => [...items, ...prev]);
     setIsProcessing(true);
 
@@ -513,11 +524,22 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
                           {t("download")}
                         </Button>
                       ) : null}
+
+                      {r.status === "done" && r.downloadUrl ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setOpenCompareId((cur) => (cur === r.id ? null : r.id))}
+                        >
+                          <Sparkles className="mr-2 size-4" />
+                          {openCompareId === r.id ? t("hide_compare") : t("show_compare")}
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
 
                   {/* Premium compare */}
-                  {r.status === "done" && r.downloadUrl ? (
+                  {r.status === "done" && r.downloadUrl && openCompareId === r.id ? (
                     <div className="mt-4">
                       <BeforeAfter original={r.originalUrl} compressed={r.downloadUrl} />
                     </div>

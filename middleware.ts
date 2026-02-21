@@ -1,24 +1,30 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/admin(.*)"]);
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware((auth, req) => {
+  // Only run on protected routes
   if (!isProtectedRoute(req)) return;
 
-  auth().protect();
+  // IMPORTANT: return the result so Clerk can redirect instead of throwing
+  const protectRes = auth().protect();
+  if (protectRes) return protectRes;
 
+  // Admin gate
   if (isAdminRoute(req)) {
-    const claims = auth().sessionClaims as any;
-    const md = (claims?.publicMetadata ?? claims?.metadata ?? {}) as Record<string, any>;
+    const { sessionClaims } = auth();
+    const md = (sessionClaims?.publicMetadata ?? {}) as Record<string, any>;
     const ok = md?.role === "admin" || md?.isAdmin === true || md?.plan === "admin";
     if (!ok) {
-      const url = new URL("/dashboard", req.url);
-      return Response.redirect(url);
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
+
+  return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: ["/((?!.*\..*|_next).*)", "/", "/(api|trpc)(.*)"],
 };

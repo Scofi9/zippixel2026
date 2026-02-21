@@ -16,7 +16,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = (typeof window !== "undefined" && window.localStorage.getItem("zippixel_lang")) || "en";
-    if (["en","tr","de","fr","es","ru","pt","it","ja","zh","ar"].includes(stored)) setLangState(stored as Lang);
+    if (["en","tr","de","fr","es","ru"].includes(stored)) setLangState(stored as Lang);
   }, []);
 
   const setLang = (l: Lang) => {
