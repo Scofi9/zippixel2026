@@ -48,7 +48,13 @@ type JobItem = {
 };
 
 export default async function HistoryPage() {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch (e: any) {
+    console.error('auth error:', e?.message || e);
+    userId = null;
+  }
 
   if (!userId) {
     return (

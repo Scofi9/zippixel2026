@@ -73,9 +73,13 @@ export async function POST(req: Request) {
   try {
     // Public endpoint: compression should work even if user isn't signed in.
     // If signed in, we apply plan limits & record history.
-    const { userId } = await auth();
-
-    const redis = (() => {
+    let userId: string | null = null;
+    try {
+      ({ userId } = await auth());
+    } catch {
+      userId = null;
+    }
+const redis = (() => {
       try {
         return getRedis();
       } catch {

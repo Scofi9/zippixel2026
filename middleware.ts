@@ -1,18 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/admin(.*)",
-]);
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/admin(.*)"]);
 
 export default clerkMiddleware((auth, req) => {
-  // Protect dashboard + admin
   if (isProtectedRoute(req)) {
     const { userId, sessionClaims } = auth();
 
     if (!userId) {
-      // Redirect to sign-in (Edge safe)
       return auth().redirectToSignIn();
     }
 
@@ -32,6 +27,6 @@ export default clerkMiddleware((auth, req) => {
 });
 
 export const config = {
-  // IMPORTANT: don't run middleware on static files (_next, images, etc) or API routes.
-  matcher: ["/((?!_next|.*\..*|api).*)"],
+  // Clerk recommends running middleware on app + api routes (except static assets)
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
 };

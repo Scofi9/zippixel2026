@@ -5,10 +5,14 @@ import { getRedis } from "@/lib/redis";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const { userId } = await auth();
-
-  if (!userId) {
+export async function GET() {let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch (e: any) {
+    console.error("auth error:", e?.message || e);
+    userId = null;
+  }
+if (!userId) {
     return NextResponse.json({ jobs: [] });
   }
 

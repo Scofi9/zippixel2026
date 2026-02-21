@@ -19,7 +19,13 @@ function clamp(n: number, min = 0, max = 100) {
 }
 
 export default async function DashboardPage() {
-  const user = await currentUser()
+  let user = null as any;
+  try {
+    user = await currentUser();
+  } catch (e: any) {
+    console.error('currentUser error:', e?.message || e);
+    user = null;
+  }
 
   if (!user) {
     return (
