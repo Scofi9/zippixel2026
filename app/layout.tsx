@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
 import { I18nProvider } from "@/components/i18n-provider"
 import { SiteFooter } from "@/components/site-footer"
+import { AnalyticsTracker } from "@/components/analytics-tracker"
 import "./globals.css"
 
 const inter = Inter({
@@ -81,6 +82,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <I18nProvider>
+              <AnalyticsTracker />
               <div className="min-h-screen flex flex-col">
                 <div className="flex-1">{children}</div>
                 <SiteFooter />
