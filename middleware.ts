@@ -5,24 +5,18 @@ const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/admin(.*)"]);
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware((auth, req) => {
-  // Only run on protected routes
-  if (!isProtectedRoute(req)) return;
+  // Protect dashboard + admin
+  if (isProtectedRoute(req)) {
+    auth().protect();
+  }
 
-  // IMPORTANT: return the result so Clerk can redirect instead of throwing
-  const protectRes = auth().protect();
-  if (protectRes) return protectRes;
-
-  // Admin gate
+  // Admin gate (only if signed in)
   if (isAdminRoute(req)) {
     const { sessionClaims } = auth();
     const md = (sessionClaims?.publicMetadata ?? {}) as Record<string, any>;
     const ok = md?.role === "admin" || md?.isAdmin === true || md?.plan === "admin";
-    if (!ok) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+    if (!ok) return NextResponse.redirect(new URL("/dashboard", req.url));
   }
-
-  return NextResponse.next();
 });
 
 export const config = {

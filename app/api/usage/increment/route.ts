@@ -17,7 +17,8 @@ export async function POST() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Public compress flow: if user isn't signed in, don't fail the whole UX.
+      return NextResponse.json({ success: false, reason: "UNAUTHENTICATED" }, { status: 200 });
     }
 
     const clerk = createClerkClient({

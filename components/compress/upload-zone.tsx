@@ -124,6 +124,9 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { t } = useI18n();
 
+  // Which result card has the premium compare view open (one at a time)
+  const [openCompareId, setOpenCompareId] = useState<string | null>(null);
+
   const [quality, setQuality] = useState(80);
   const initialFormat = ((): OutputFormat => {
     const v = String(defaultFormat ?? "").toLowerCase();

@@ -71,33 +71,44 @@ function extFor(fmt: OutputFormat) {
 
 export async function POST(req: Request) {
   try {
-    const redis = getRedis();
-
+    // Public endpoint: compression should work even if user isn't signed in.
+    // If signed in, we apply plan limits & record history.
     const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // ✅ Limit check (Clerk metadata) - heavy work yapmadan önce
-    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
-    const user = await clerk.users.getUser(userId);
-    const md = (user.publicMetadata ?? {}) as Record<string, any>;
+    const redis = (() => {
+      try {
+        return getRedis();
+      } catch {
+        return null;
+      }
+    })();
 
-    const planKey = safePlanKey(md.plan);
-    const limit = PLANS[planKey].monthlyLimitImages;
+    // Optional Clerk-based limit check (only when signed in AND secret key exists)
+    let planKey: PlanKey = "free";
+    let limit = 0;
+    let usage = 0;
 
-    const keyNow = monthKey();
-    const keyStored = (md.usageMonthKey as string) ?? keyNow;
+    if (userId && process.env.CLERK_SECRET_KEY) {
+      const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const user = await clerk.users.getUser(userId);
+      const md = (user.publicMetadata ?? {}) as Record<string, any>;
 
-    let usage = Number(md.usageThisMonth ?? 0) || 0;
-    if (keyStored !== keyNow) usage = 0;
-    if (limit > 0) usage = Math.min(usage, limit);
+      planKey = safePlanKey(md.plan);
+      limit = PLANS[planKey].monthlyLimitImages;
 
-    if (limit > 0 && usage >= limit) {
-      return NextResponse.json(
-        { error: "LIMIT_REACHED", usageThisMonth: usage, limit, plan: planKey },
-        { status: 403 }
-      );
+      const keyNow = monthKey();
+      const keyStored = (md.usageMonthKey as string) ?? keyNow;
+
+      usage = Number(md.usageThisMonth ?? 0) || 0;
+      if (keyStored !== keyNow) usage = 0;
+      if (limit > 0) usage = Math.min(usage, limit);
+
+      if (limit > 0 && usage >= limit) {
+        return NextResponse.json(
+          { error: "LIMIT_REACHED", usageThisMonth: usage, limit, plan: planKey },
+          { status: 403 }
+        );
+      }
     }
 
     const form = await req.formData();
@@ -248,19 +259,30 @@ candidates.sort((a, b) => a.buf.length - b.buf.length);
       outputUrl,
     };
 
-    await redis.lpush(`jobs:${userId}`, JSON.stringify(job));
-    await redis.set(`job:${userId}:${id}`, JSON.stringify(job));
-    await redis.set(`file:${userId}:${id}`, best.buf.toString("base64"), {
-      ex: 60 * 60 * 24,
-    });
+    // Store history only when signed in and Redis is available.
+    if (userId && redis) {
+      try {
+        await redis.lpush(`jobs:${userId}`, JSON.stringify(job));
+        await redis.set(`job:${userId}:${id}`, JSON.stringify(job));
+        await redis.set(`file:${userId}:${id}`, best.buf.toString("base64"), {
+          ex: 60 * 60 * 24,
+        });
+      } catch {
+        // ignore history storage errors
+      }
+    }
 
     // Global metrics (for Admin dashboard)
-    try {
-      const savedBytes = Math.max(0, originalBytes - best.buf.length);
-      await redis.incr("global:compressions");
-      await redis.incrby("global:savedBytes", savedBytes);
-    } catch {
-      // ignore metrics errors
+    // Note: never fail the request if metrics storage fails.
+    if (redis) {
+      try {
+        const originalBytes = inputBuffer.length;
+        const savedBytes = Math.max(0, originalBytes - best.buf.length);
+        await redis.incr("global:compressions");
+        await redis.incrby("global:savedBytes", savedBytes);
+      } catch {
+        // ignore metrics errors
+      }
     }
 
     const ext = extFor(best.fmt);
