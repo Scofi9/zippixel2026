@@ -43,6 +43,8 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+// Premium: slider “50” = encoder’a direkt 50 vermiyoruz.
+// Görseli “çok bozmadan” daha iyi sıkıştırma için perceptual curve.
 function perceptualQuality(uiQ: number) {
   const q = clamp(Math.round(uiQ), 1, 100);
   // 1..100 -> 35..92 gibi davranır (daha premium görüntü)
