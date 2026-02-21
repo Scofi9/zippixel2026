@@ -4,14 +4,9 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {let userId: string | null = null;
-  try {
-    ({ userId } = await auth());
-  } catch (e: any) {
-    console.error("auth error:", e?.message || e);
-    userId = null;
-  }
-if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: Request) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const preferences = {

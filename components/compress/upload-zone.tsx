@@ -116,20 +116,18 @@ function BeforeAfter({ original, compressed }: { original: string; compressed: s
         </div>
 
         <div
-          className="absolute inset-y-0 -translate-x-1/2 cursor-ew-resize touch-none"
+          className="absolute inset-y-0 w-10 -translate-x-1/2 cursor-ew-resize touch-none"
           style={{ left: `${pct}%` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          <div className="relative h-full w-10">
-            <div className="absolute left-1/2 top-0 h-full w-[2px] -translate-x-1/2 bg-white/70 dark:bg-white/60">
+          <div className="relative mx-auto h-full w-[2px] bg-white/70 dark:bg-white/60">
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <div className="grid size-8 place-items-center rounded-full border border-white/40 bg-black/40 backdrop-blur-md shadow-lg">
                 <Sparkles className="size-4 text-white/90" />
               </div>
-            </div>
             </div>
           </div>
         </div>

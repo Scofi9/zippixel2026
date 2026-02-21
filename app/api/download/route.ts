@@ -12,14 +12,9 @@ type Job = {
 };
 
 export async function GET(req: NextRequest) {
-  try {let userId: string | null = null;
-    try {
-      ({ userId } = await auth());
-    } catch (e: any) {
-      console.error("auth error:", e?.message || e);
-      userId = null;
-    }
-if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const id = new URL(req.url).searchParams.get("id");
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

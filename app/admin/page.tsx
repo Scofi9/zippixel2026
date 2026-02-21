@@ -19,13 +19,7 @@ function formatBytes(bytes: number) {
 }
 
 export default async function AdminPage() {
-  let user = null as any;
-  try {
-    user = await currentUser();
-  } catch (e: any) {
-    console.error('currentUser error:', e?.message || e);
-    user = null;
-  }
+  const user = await currentUser();
   if (!user) redirect("/sign-in");
   if (!isAdminUser(user)) redirect("/dashboard");
 

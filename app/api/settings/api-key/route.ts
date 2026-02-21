@@ -12,14 +12,9 @@ function maskKey(k: string) {
   return `${k.slice(0, 7)}…${k.slice(-4)}`;
 }
 
-export async function GET() {let userId: string | null = null;
-  try {
-    ({ userId } = await auth());
-  } catch (e: any) {
-    console.error("auth error:", e?.message || e);
-    userId = null;
-  }
-if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const user = await clerkClient.users.getUser(userId);
   let apiKey = (user.privateMetadata?.apiKey as string | undefined) ?? "";

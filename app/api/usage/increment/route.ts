@@ -14,14 +14,9 @@ function safePlanKey(raw: any): PlanKey {
 }
 
 export async function POST() {
-  try {let userId: string | null = null;
-    try {
-      ({ userId } = await auth());
-    } catch (e: any) {
-      console.error("auth error:", e?.message || e);
-      userId = null;
-    }
-if (!userId) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
       // Public compress flow: if user isn't signed in, don't fail the whole UX.
       return NextResponse.json({ success: false, reason: "UNAUTHENTICATED" }, { status: 200 });
     }

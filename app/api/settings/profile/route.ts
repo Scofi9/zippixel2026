@@ -5,13 +5,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  let userId: string | null = null;
-  try {
-    ({ userId } = await auth());
-  } catch {
-    userId = null;
-  }
-if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const fullName = String(body.fullName ?? "").trim();
