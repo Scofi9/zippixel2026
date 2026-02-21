@@ -1,32 +1,37 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/admin(.*)",
+]);
 
 export default clerkMiddleware((auth, req) => {
-  // Admin must be signed in AND have role.
-  if (isAdminRoute(req)) {
-    // IMPORTANT: return the protect() response if it triggers a redirect.
-    const protectRes = auth().protect();
-    if (protectRes) return protectRes;
+  // Protect dashboard + admin
+  if (isProtectedRoute(req)) {
+    const { userId, sessionClaims } = auth();
 
-    const { sessionClaims } = auth();
-    const md = (sessionClaims?.publicMetadata ?? {}) as Record<string, any>;
-    const ok = md?.role === "admin" || md?.isAdmin === true || md?.plan === "admin";
-    if (!ok) return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (!userId) {
+      // Redirect to sign-in (Edge safe)
+      return auth().redirectToSignIn();
+    }
 
-    return NextResponse.next();
-  }
+    // Admin gate (only on /admin)
+    if (req.nextUrl.pathname.startsWith("/admin")) {
+      const md = (sessionClaims?.publicMetadata ?? {}) as Record<string, any>;
+      const ok =
+        md?.role === "admin" || md?.isAdmin === true || md?.plan === "admin";
 
-  // Dashboard routes must be signed in.
-  if (isDashboardRoute(req)) {
-    return auth().protect();
+      if (!ok) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
   }
 
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!.*\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  // IMPORTANT: don't run middleware on static files (_next, images, etc) or API routes.
+  matcher: ["/((?!_next|.*\..*|api).*)"],
 };
