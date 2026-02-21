@@ -93,7 +93,8 @@ export default async function HistoryPage() {
           {jobs.length === 0 ? (
             <div className="text-sm text-muted-foreground">No compressions yet.</div>
           ) : (
-            <div className="overflow-x-auto"><Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>File</TableHead>
@@ -164,6 +165,7 @@ export default async function HistoryPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
