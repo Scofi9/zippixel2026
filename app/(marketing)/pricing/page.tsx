@@ -32,7 +32,7 @@ const plans = [
     period: "forever",
     description: "Perfect for personal projects and testing.",
     features: [
-      "10 images / month",
+      "50 images / month",
       "Max 5MB per image",
       "JPG, PNG, WebP",
       "Standard compression",
@@ -48,8 +48,8 @@ const plans = [
     period: "/month",
     description: "For small sites and creators getting serious.",
     features: [
-      "250 images / month",
-      "Max 15MB per image",
+      "300 images / month",
+      "Max 10MB per image",
       "JPG, PNG, WebP, AVIF",
       "Faster compression",
       "Web upload",
@@ -64,8 +64,8 @@ const plans = [
     period: "/month",
     description: "For professionals who compress daily.",
     features: [
-      "1,500 images / month",
-      "Max 30MB per image",
+      "2,000 images / month",
+      "Max 25MB per image",
       "All modern formats",
       "Priority processing",
       "Batch upload",
@@ -81,8 +81,8 @@ const plans = [
     period: "/month",
     description: "For power users & agencies with heavy volume.",
     features: [
-      "5,000 images / month",
-      "Max 70MB per image",
+      "10,000 images / month",
+      "Max 50MB per image",
       "All modern formats",
       "Highest priority queue",
       "Batch upload",

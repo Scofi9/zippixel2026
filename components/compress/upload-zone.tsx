@@ -205,7 +205,15 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
     setLimitReached(false);
   };
 
-  const triggerDownload = (url: string, filename: string) => {
+  const triggerDownload = (url: string, filename: string, meta?: { action?: "compress" | "crop"; file?: string; fmt?: string }) => {
+    // best-effort download tracking (only counts when signed in)
+    fetch("/api/analytics/track", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "download", path: "/compress", action: meta?.action ?? "compress", file: meta?.file ?? filename, fmt: meta?.fmt ?? "" }),
+      keepalive: true,
+    }).catch(() => {});
+
     const a = document.createElement("a");
     a.href = url;
     a.download = filename;
@@ -362,7 +370,13 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
   const downloadAll = () => {
     results
       .filter((r) => r.status === "done" && r.downloadUrl)
-      .forEach((r) => triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`));
+      .forEach((r) =>
+        triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`, {
+          action: "compress",
+          file: r.name,
+          fmt: r.outputFormat,
+        })
+      );
   };
 
   const stageLabel = (s?: Item["stage"]) => {
@@ -558,7 +572,13 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
                       {r.status === "done" && r.downloadUrl ? (
                         <Button
                           size="sm"
-                          onClick={() => triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`)}
+                          onClick={() =>
+                            triggerDownload(r.downloadUrl!, r.outputFileName ?? `zippixel-${r.name}`, {
+                              action: "compress",
+                              file: r.name,
+                              fmt: r.outputFormat,
+                            })
+                          }
                         >
                           <Download className="mr-2 size-4" />
                           {t("download")}

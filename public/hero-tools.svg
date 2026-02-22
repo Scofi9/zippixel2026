@@ -1,0 +1,75 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="155" y1="100" x2="1030" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5" stop-opacity="0.85"/>
+      <stop offset="0.45" stop-color="#7C3AED" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#EC4899" stop-opacity="0.75"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="180" y1="180" x2="900" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22C55E" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0.12"/>
+    </linearGradient>
+    <filter id="blur" x="-50" y="-50" width="1300" height="900" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+
+  <!-- soft colorful blobs -->
+  <g filter="url(#blur)">
+    <circle cx="270" cy="250" r="140" fill="#4F46E5" fill-opacity="0.30"/>
+    <circle cx="840" cy="220" r="160" fill="#EC4899" fill-opacity="0.22"/>
+    <circle cx="760" cy="620" r="180" fill="#7C3AED" fill-opacity="0.22"/>
+    <circle cx="360" cy="610" r="170" fill="#22C55E" fill-opacity="0.10"/>
+  </g>
+
+  <!-- glass card -->
+  <rect x="170" y="140" width="860" height="520" rx="28" fill="url(#g2)"/>
+  <rect x="170" y="140" width="860" height="520" rx="28" stroke="#FFFFFF" stroke-opacity="0.22"/>
+
+  <!-- header chips -->
+  <rect x="210" y="180" width="160" height="44" rx="22" fill="#0B1220" fill-opacity="0.32"/>
+  <rect x="210" y="180" width="160" height="44" rx="22" stroke="#FFFFFF" stroke-opacity="0.18"/>
+  <text x="240" y="208" fill="#FFFFFF" fill-opacity="0.88" font-family="ui-sans-serif, system-ui" font-size="14" font-weight="600">Compress</text>
+
+  <rect x="380" y="180" width="120" height="44" rx="22" fill="#0B1220" fill-opacity="0.24"/>
+  <rect x="380" y="180" width="120" height="44" rx="22" stroke="#FFFFFF" stroke-opacity="0.14"/>
+  <text x="412" y="208" fill="#FFFFFF" fill-opacity="0.78" font-family="ui-sans-serif, system-ui" font-size="14" font-weight="600">Crop</text>
+
+  <!-- left panel mock -->
+  <rect x="210" y="250" width="280" height="360" rx="18" fill="#0B1220" fill-opacity="0.24"/>
+  <rect x="210" y="250" width="280" height="360" rx="18" stroke="#FFFFFF" stroke-opacity="0.12"/>
+
+  <rect x="236" y="284" width="228" height="120" rx="14" fill="#111827" fill-opacity="0.38"/>
+  <rect x="236" y="284" width="228" height="120" rx="14" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <text x="252" y="318" fill="#FFFFFF" fill-opacity="0.86" font-family="ui-sans-serif, system-ui" font-size="14" font-weight="700">Upload</text>
+  <text x="252" y="342" fill="#FFFFFF" fill-opacity="0.64" font-family="ui-sans-serif, system-ui" font-size="12">JPG · PNG · WebP · AVIF</text>
+
+  <rect x="236" y="420" width="228" height="44" rx="12" fill="url(#g1)" fill-opacity="0.9"/>
+  <text x="260" y="448" fill="#FFFFFF" font-family="ui-sans-serif, system-ui" font-size="13" font-weight="700">Optimize & Download</text>
+
+  <rect x="236" y="480" width="228" height="110" rx="14" fill="#111827" fill-opacity="0.32"/>
+  <rect x="236" y="480" width="228" height="110" rx="14" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <text x="252" y="512" fill="#FFFFFF" fill-opacity="0.80" font-family="ui-sans-serif, system-ui" font-size="13" font-weight="700">Quality</text>
+  <rect x="252" y="532" width="196" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.18"/>
+  <rect x="252" y="532" width="142" height="10" rx="5" fill="#FFFFFF" fill-opacity="0.45"/>
+
+  <!-- main preview mock -->
+  <rect x="520" y="250" width="470" height="360" rx="18" fill="#0B1220" fill-opacity="0.22"/>
+  <rect x="520" y="250" width="470" height="360" rx="18" stroke="#FFFFFF" stroke-opacity="0.12"/>
+
+  <!-- image placeholder -->
+  <rect x="546" y="278" width="418" height="260" rx="16" fill="#111827" fill-opacity="0.36"/>
+  <rect x="546" y="278" width="418" height="260" rx="16" stroke="#FFFFFF" stroke-opacity="0.10"/>
+
+  <!-- crop frame -->
+  <rect x="650" y="328" width="210" height="160" rx="10" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="2"/>
+  <rect x="640" y="318" width="12" height="12" rx="3" fill="#FFFFFF" fill-opacity="0.85"/>
+  <rect x="862" y="318" width="12" height="12" rx="3" fill="#FFFFFF" fill-opacity="0.85"/>
+  <rect x="640" y="490" width="12" height="12" rx="3" fill="#FFFFFF" fill-opacity="0.85"/>
+  <rect x="862" y="490" width="12" height="12" rx="3" fill="#FFFFFF" fill-opacity="0.85"/>
+
+  <!-- bottom stats -->
+  <rect x="546" y="552" width="418" height="40" rx="12" fill="#111827" fill-opacity="0.26"/>
+  <rect x="546" y="552" width="418" height="40" rx="12" stroke="#FFFFFF" stroke-opacity="0.10"/>
+  <text x="566" y="578" fill="#FFFFFF" fill-opacity="0.72" font-family="ui-sans-serif, system-ui" font-size="12">Saved: 68% · Output: WebP · 184 KB</text>
+</svg>

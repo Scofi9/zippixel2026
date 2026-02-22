@@ -96,6 +96,80 @@ export default async function AdminActivityPage() {
                       );
                     }
 
+                    if (e.type === "crop") {
+                      return (
+                        <TableRow key={`${e.t}-${i}`}>
+                          <TableCell className="text-sm font-medium">Image cropped</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              crop
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                            {userLabel}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                            {(e as any).file} ({formatBytes((e as any).originalBytes)} → {formatBytes((e as any).outputBytes)}) · {(e as any).fmt}
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(e.t)}</TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (e.type === "download") {
+                      return (
+                        <TableRow key={`${e.t}-${i}`}>
+                          <TableCell className="text-sm font-medium">Download</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              download
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                            {userLabel}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
+                            {(e as any).action} · {(e as any).file} · {(e as any).fmt}
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(e.t)}</TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (e.type === "login") {
+                      return (
+                        <TableRow key={`${e.t}-${i}`}>
+                          <TableCell className="text-sm font-medium">User login</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              login
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                            {userLabel}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{(e as any).path}</TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(e.t)}</TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    if (e.type === "logout") {
+                      return (
+                        <TableRow key={`${e.t}-${i}`}>
+                          <TableCell className="text-sm font-medium">User logout</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">logout</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
+                            {userLabel}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{(e as any).path}</TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(e.t)}</TableCell>
+                        </TableRow>
+                      );
+                    }
+
                     // pageview
                     return (
                       <TableRow key={`${e.t}-${i}`}>

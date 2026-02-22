@@ -4,6 +4,21 @@ import { Button } from "@/components/ui/button";
 
 const TOOLS = [
   {
+    "slug": "crop-image",
+    "title": "Crop Image Online",
+    "desc": "Crop images online in seconds. Reframe photos and export to JPG, PNG, WebP, or AVIF."
+  },
+  {
+    "slug": "image-cropper",
+    "title": "Online Image Cropper",
+    "desc": "A fast, simple image cropper for perfect framing and aspect ratios."
+  },
+  {
+    "slug": "crop-photo",
+    "title": "Crop Photo",
+    "desc": "Crop photos to the right size for social, web, and mobile."
+  },
+  {
     "slug": "image-compressor",
     "title": "Online Image Compressor",
     "desc": "Compress images online in seconds. Reduce file size while keeping quality."
@@ -143,6 +158,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 
 export default function ToolPage({ params }: { params: { slug: string } }) {
   const tool = getTool(params.slug);
+  const isCrop = tool.slug.includes("crop");
+  const primaryHref = isCrop ? "/crop" : "/compress";
+  const primaryLabel = isCrop ? "Crop images now" : "Compress images now";
 
   if (!tool) {
     return (
@@ -167,7 +185,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button asChild size="lg">
-            <Link href="/compress">Compress images now</Link>
+            <Link href={primaryHref}>{primaryLabel}</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link href="/pricing">See plans</Link>

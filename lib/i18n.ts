@@ -24,6 +24,7 @@ export const DICT = {
     nav_dashboard: "Dashboard",
     nav_login: "Log in",
     nav_compress: "Compress Images",
+    nav_crop: "Crop Images",
 
     // Landing
     hero_badge: "AI‑Powered Compression Engine",
@@ -49,6 +50,9 @@ export const DICT = {
     feature_batch_title: "Batch Processing",
     feature_batch_desc:
       "Upload and compress many images at once. Perfect for teams and large projects.",
+    feature_crop_title: "Crop & Reframe",
+    feature_crop_desc:
+      "Crop, resize, and reframe images with a clean, precise crop tool. Export to modern formats.",
     feature_api_title: "API Access",
     feature_api_desc:
       "Integrate ZipPixel into your workflow with a simple REST API (coming with keys in Settings).",
@@ -67,6 +71,25 @@ export const DICT = {
     compress_h1: "Compress images online",
     compress_p:
       "Reduce image file size up to 90% without losing quality. AI‑powered compression for JPG, PNG, WebP, and AVIF.",
+
+    // Crop page
+    crop_h1: "Crop images online",
+    crop_p: "Crop, resize, and reframe your images in seconds. Export as JPG, PNG, WebP, or AVIF.",
+    crop_upload_title: "Upload an image",
+    crop_upload_desc: "Drag & drop an image here, or click to browse.",
+    crop_aspect: "Aspect",
+    crop_free: "Free",
+    crop_export: "Export",
+    crop_quality: "Quality",
+    crop_apply: "Crop & Download",
+    crop_reset: "Reset",
+    crop_x: "X",
+    crop_y: "Y",
+    crop_w: "Width",
+    crop_h: "Height",
+    crop_zoom: "Zoom",
+    crop_rotate: "Rotate",
+    crop_tip: "Tip: Use the handles to adjust the frame. Precision fields are in pixels.",
 
     // Upload zone
     upload_drop: "Drop images here to compress",
@@ -106,6 +129,8 @@ export const DICT = {
       "Tell us what you need. You can report a bug or contact support. (Email hookup coming soon.)",
     support_contact: "Contact support",
     support_report: "Report an issue",
+    support_email: "Email support (coming soon)",
+    support_note: "We’re wiring up email and faster support flows. For now, please use the contact button in the footer.",
     support_close: "Close",
 
     // Dashboard / Settings
@@ -121,6 +146,7 @@ export const DICT = {
     nav_dashboard: "Panel",
     nav_login: "Giriş",
     nav_compress: "Görsel Sıkıştır",
+    nav_crop: "Görsel Kırp",
 
     hero_badge: "Yapay Zekâ Destekli Sıkıştırma Motoru",
     hero_title: "Kaliteyi bozmadan görselleri sıkıştır",
@@ -145,6 +171,9 @@ export const DICT = {
     feature_batch_title: "Toplu İşleme",
     feature_batch_desc:
       "Bir seferde birden çok görsel yükle ve sıkıştır. Büyük işler için ideal.",
+    feature_crop_title: "Kırp & Yeniden Çerçevele",
+    feature_crop_desc:
+      "Temiz ve hassas bir kırpma aracıyla görselleri kırp, yeniden boyutlandır ve dışa aktar.",
     feature_api_title: "API Erişimi",
     feature_api_desc:
       "REST API ile iş akışına entegre et (anahtarlar Ayarlar'dan yönetilir).",
@@ -162,6 +191,24 @@ export const DICT = {
     compress_h1: "Görselleri çevrimiçi sıkıştır",
     compress_p:
       "Kalite kaybı olmadan dosya boyutunu %90'a kadar düşür. JPG, PNG, WebP ve AVIF için yapay zekâ destekli sıkıştırma.",
+
+    crop_h1: "Görselleri çevrimiçi kırp",
+    crop_p: "Görselleri saniyeler içinde kırp, yeniden çerçevele ve dışa aktar. JPG, PNG, WebP, AVIF destekler.",
+    crop_upload_title: "Görsel yükle",
+    crop_upload_desc: "Görseli sürükleyip bırak ya da tıklayıp seç.",
+    crop_aspect: "Oran",
+    crop_free: "Serbest",
+    crop_export: "Çıktı",
+    crop_quality: "Kalite",
+    crop_apply: "Kırp ve İndir",
+    crop_reset: "Sıfırla",
+    crop_x: "X",
+    crop_y: "Y",
+    crop_w: "Genişlik",
+    crop_h: "Yükseklik",
+    crop_zoom: "Yakınlaştır",
+    crop_rotate: "Döndür",
+    crop_tip: "İpucu: Köşelerden çerçeveyi ayarla. Hassas alanlar piksel cinsindendir.",
 
     upload_drop: "Sıkıştırmak için görselleri buraya bırak",
     upload_browse: "Dosya Seç",
@@ -199,6 +246,8 @@ export const DICT = {
       "İhtiyacını yaz. Hata bildirimi veya destek mesajı bırakabilirsin. (E‑posta bağlantısı yakında.)",
     support_contact: "Destek ekibi",
     support_report: "Hata bildir",
+    support_email: "E‑posta destek (yakında)",
+    support_note: "E‑posta ve hızlı destek akışlarını hazırlıyoruz. Şimdilik footer’daki iletişim kısmını kullanabilirsin.",
     support_close: "Kapat",
 
     settings_title: "Ayarlar",

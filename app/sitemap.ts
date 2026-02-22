@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
     "/",
     "/compress",
+    "/crop",
     "/compress/jpg",
     "/compress/png",
     "/compress/webp",
@@ -27,6 +28,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/status",
     "/privacy",
     "/tools",
+    "/tools/crop-image",
+    "/tools/image-cropper",
+    "/tools/crop-photo",
     "/tools/image-compressor",
     "/tools/reduce-image-size",
     "/tools/compress-jpg",

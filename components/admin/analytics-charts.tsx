@@ -14,7 +14,16 @@ import {
   Cell,
 } from "recharts"
 
-export type DailyPoint = { day: string; dau: number; compressions: number }
+export type DailyPoint = {
+  day: string
+  dau: number
+  pageviews: number
+  logins: number
+  compressions: number
+  crops: number
+  downloads: number
+  ops: number
+}
 export type FormatPoint = { name: string; value: number; color: string }
 
 export function AdminAnalyticsCharts({ dailyData, formatData }: { dailyData: DailyPoint[]; formatData: FormatPoint[] }) {
@@ -23,7 +32,7 @@ export function AdminAnalyticsCharts({ dailyData, formatData }: { dailyData: Dai
       <Card className="border-border/50 bg-card/50 lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base">Daily Active Users</CardTitle>
-          <CardDescription>Users and compressions over the last 7 days</CardDescription>
+          <CardDescription>Uniques and operations over the last 7 days</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
@@ -33,6 +42,10 @@ export function AdminAnalyticsCharts({ dailyData, formatData }: { dailyData: Dai
                   <linearGradient id="colorDau" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="oklch(0.75 0.18 155)" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="oklch(0.75 0.18 155)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOps" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="oklch(0.75 0.16 255)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="oklch(0.75 0.16 255)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.005 260)" vertical={false} />
@@ -47,6 +60,7 @@ export function AdminAnalyticsCharts({ dailyData, formatData }: { dailyData: Dai
                     fontSize: "12px",
                   }}
                 />
+                <Area type="monotone" dataKey="ops" stroke="oklch(0.75 0.16 255)" strokeWidth={2} fillOpacity={1} fill="url(#colorOps)" />
                 <Area type="monotone" dataKey="dau" stroke="oklch(0.75 0.18 155)" strokeWidth={2} fillOpacity={1} fill="url(#colorDau)" />
               </AreaChart>
             </ResponsiveContainer>

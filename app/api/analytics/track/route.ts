@@ -21,8 +21,19 @@ function hashVisitor(ip: string, ua: string) {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { path?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      path?: string;
+      type?: string;
+      uidHint?: string;
+      action?: "compress" | "crop";
+      file?: string;
+      fmt?: string;
+    };
     const path = typeof body.path === "string" ? body.path.slice(0, 200) : "/";
+    const typeRaw = typeof body.type === "string" ? body.type : "pageview";
+    const type = ("pageview" === typeRaw || "login" === typeRaw || "logout" === typeRaw || "download" === typeRaw)
+      ? (typeRaw as "pageview" | "login" | "logout" | "download")
+      : "pageview";
 
     const h = await headers();
     const ua = (h.get("user-agent") || "").slice(0, 200);
@@ -49,38 +60,74 @@ export async function POST(req: Request) {
     const pvKey = `analytics:pv:${dk}`;
     const uvKey = `analytics:uv:${dk}`;
     const loginKey = `analytics:login:${dk}`;
+    const logoutKey = `analytics:logout:${dk}`;
     const totalPvKey = "analytics:pv:total";
     const totalLoginKey = "analytics:login:total";
+    const totalLogoutKey = "analytics:logout:total";
+    const dlKey = `daily:downloads:${dk}`;
+    const totalDlKey = "global:downloads";
     const eventsKey = "analytics:events";
     const adminEventsKey = "admin:events";
 
     const now = Date.now();
-    const event = {
+    const eventBase = {
       t: now,
+      type,
       path,
       in: Boolean(userId),
     };
 
-    const adminEvent = {
+    const adminBase: any = {
       t: now,
-      type: "pageview",
       path,
-      in: Boolean(userId),
-      userId: userId || null,
     };
 
     const ops: Promise<any>[] = [];
-    ops.push(redis.incr(pvKey));
-    ops.push(redis.incr(totalPvKey));
-    ops.push(redis.sadd(uvKey, visitorId));
-    ops.push(redis.lpush(eventsKey, JSON.stringify(event)));
-    ops.push(redis.ltrim(eventsKey, 0, 199));
-    ops.push(redis.lpush(adminEventsKey, JSON.stringify(adminEvent)));
-    ops.push(redis.ltrim(adminEventsKey, 0, 199));
 
-    if (userId) {
+    if (type === "pageview") {
+      ops.push(redis.incr(pvKey));
+      ops.push(redis.incr(totalPvKey));
+      ops.push(redis.sadd(uvKey, visitorId));
+      ops.push(redis.lpush(eventsKey, JSON.stringify(eventBase)));
+      ops.push(redis.ltrim(eventsKey, 0, 199));
+      ops.push(
+        redis.lpush(
+          adminEventsKey,
+          JSON.stringify({ ...adminBase, type: "pageview", in: Boolean(userId), userId: userId || null })
+        )
+      );
+      ops.push(redis.ltrim(adminEventsKey, 0, 199));
+    }
+
+    if (type === "login" && userId) {
       ops.push(redis.incr(loginKey));
       ops.push(redis.incr(totalLoginKey));
+      ops.push(redis.lpush(eventsKey, JSON.stringify({ ...eventBase, in: true })));
+      ops.push(redis.ltrim(eventsKey, 0, 199));
+      ops.push(redis.lpush(adminEventsKey, JSON.stringify({ ...adminBase, type: "login", userId, path })));
+      ops.push(redis.ltrim(adminEventsKey, 0, 199));
+    }
+
+    if (type === "logout") {
+      ops.push(redis.incr(logoutKey));
+      ops.push(redis.incr(totalLogoutKey));
+      const hinted = typeof body.uidHint === "string" && body.uidHint.startsWith("user_") ? body.uidHint : null;
+      ops.push(redis.lpush(eventsKey, JSON.stringify({ ...eventBase, in: false, userId: hinted })));
+      ops.push(redis.ltrim(eventsKey, 0, 199));
+      ops.push(redis.lpush(adminEventsKey, JSON.stringify({ ...adminBase, type: "logout", userId: hinted, path })));
+      ops.push(redis.ltrim(adminEventsKey, 0, 199));
+    }
+
+    if (type === "download" && userId) {
+      const action = body.action === "crop" ? "crop" : "compress";
+      const file = typeof body.file === "string" ? body.file.slice(0, 160) : "";
+      const fmt = typeof body.fmt === "string" ? body.fmt.slice(0, 20) : "";
+      ops.push(redis.incr(totalDlKey));
+      ops.push(redis.incr(dlKey));
+      ops.push(redis.lpush(eventsKey, JSON.stringify({ ...eventBase, in: true, userId, action, file, fmt })));
+      ops.push(redis.ltrim(eventsKey, 0, 199));
+      ops.push(redis.lpush(adminEventsKey, JSON.stringify({ ...adminBase, type: "download", userId, action, file, fmt })));
+      ops.push(redis.ltrim(adminEventsKey, 0, 199));
     }
 
     await Promise.allSettled(ops);

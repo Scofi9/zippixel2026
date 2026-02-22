@@ -1,6 +1,6 @@
 "use client"
 
-import { Zap, Shield, Image, Layers, Globe, Lock } from "lucide-react"
+import { Zap, Shield, Image, Layers, Globe, Lock, Crop } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useI18n } from "@/components/i18n-provider"
 
@@ -12,6 +12,7 @@ export function FeaturesGrid() {
     { icon: Image, title: t("feature_formats_title"), description: t("feature_formats_desc") },
     { icon: Shield, title: t("feature_quality_title"), description: t("feature_quality_desc") },
     { icon: Layers, title: t("feature_batch_title"), description: t("feature_batch_desc") },
+    { icon: Crop, title: t("feature_crop_title"), description: t("feature_crop_desc") },
     { icon: Globe, title: t("feature_api_title"), description: t("feature_api_desc") },
     { icon: Lock, title: t("feature_secure_title"), description: t("feature_secure_desc") },
   ]

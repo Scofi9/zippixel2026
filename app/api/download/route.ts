@@ -10,7 +10,25 @@ type Job = {
   id: string;
   fileName?: string;
   outputFormat?: string;
+  action?: "compress" | "crop";
+  outputFileName?: string;
 };
+
+function dayKey(d = new Date()) {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function contentTypeForExt(ext: string) {
+  const e = ext.toLowerCase();
+  if (e === "webp") return "image/webp";
+  if (e === "jpg" || e === "jpeg") return "image/jpeg";
+  if (e === "png") return "image/png";
+  if (e === "avif") return "image/avif";
+  return "application/octet-stream";
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -79,12 +97,41 @@ if (!rl.ok) {
 
     const buffer = Buffer.from(b64, "base64");
     const safeName = (job.fileName || "image").replace(/[^\w.\-()\s]/g, "_");
-    const ext = (job.outputFormat || "webp").toLowerCase();
-    const filename = `compressed-${safeName}.${ext}`;
+
+    const of = String(job.outputFormat || "WEBP").toUpperCase();
+    const ext =
+      of === "AVIF" ? "avif" : of === "PNG" ? "png" : of === "JPEG" ? "jpg" : of === "ORIGINAL" ? safeName.split(".").pop() || "bin" : "webp";
+
+    const action = job.action || "compress";
+    const baseName = safeName.replace(/\.[^/.]+$/, "");
+    const fallbackName = `zippixel-${action}-${baseName}.${ext}`;
+    const filename = (job.outputFileName || fallbackName).replace(/[^\w.\-()\s]/g, "_");
+
+    // Metrics + admin event (best-effort)
+    try {
+      const dk = dayKey();
+      const ops: Promise<any>[] = [];
+      ops.push(redis.incr("global:downloads"));
+      ops.push(redis.incr(`daily:downloads:${dk}`));
+      const adminEvent = {
+        t: Date.now(),
+        type: "download",
+        userId,
+        action,
+        file: safeName,
+        fmt: of,
+        id,
+      };
+      ops.push(redis.lpush("admin:events", JSON.stringify(adminEvent)));
+      ops.push(redis.ltrim("admin:events", 0, 199));
+      await Promise.allSettled(ops);
+    } catch {
+      // ignore
+    }
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": ext === "webp" ? "image/webp" : "application/octet-stream",
+        "Content-Type": contentTypeForExt(ext),
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",
       },

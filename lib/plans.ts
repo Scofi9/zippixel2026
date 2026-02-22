@@ -8,8 +8,8 @@ export const PLANS: Record<
     maxFileMb: number
   }
 > = {
-  free: { name: "Free", monthlyLimitImages: 10, maxFileMb: 5 },
-  basic: { name: "Basic", monthlyLimitImages: 250, maxFileMb: 10 },
-  pro: { name: "Pro", monthlyLimitImages: 1500, maxFileMb: 25 },
-  plus: { name: "Plus", monthlyLimitImages: 5000, maxFileMb: 50 },
+  free: { name: "Free", monthlyLimitImages: 50, maxFileMb: 5 },
+  basic: { name: "Basic", monthlyLimitImages: 300, maxFileMb: 10 },
+  pro: { name: "Pro", monthlyLimitImages: 2000, maxFileMb: 25 },
+  plus: { name: "Plus", monthlyLimitImages: 10000, maxFileMb: 50 },
 }

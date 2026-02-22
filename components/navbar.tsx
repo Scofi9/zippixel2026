@@ -30,6 +30,16 @@ export function Navbar() {
       <nav className="relative mx-auto flex h-16 max-w-7xl items-center px-4 lg:px-8">
         <div className="flex items-center gap-3">
           <Logo />
+
+          {/* Primary tools (left) */}
+          <div className="hidden items-center gap-2 md:flex">
+            <Button size="sm" asChild className="h-9 rounded-xl px-4">
+              <Link href="/compress">{t("nav_compress")}</Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild className="h-9 rounded-xl px-4">
+              <Link href="/crop">{t("nav_crop")}</Link>
+            </Button>
+          </div>
         </div>
 
         {/* Desktop nav (perfectly centered) */}
@@ -64,10 +74,6 @@ export function Navbar() {
               <Link href="/dashboard">{t("nav_dashboard")}</Link>
             </Button>
           </SignedIn>
-
-          <Button size="sm" asChild>
-            <Link href="/compress">{t("nav_compress")}</Link>
-          </Button>
 
           <SignedIn>
             <AccountMenu />
@@ -130,11 +136,18 @@ export function Navbar() {
                   </Button>
                 </SignedIn>
 
-                <Button asChild>
-                  <Link href="/compress" onClick={() => setOpen(false)}>
-                    {t("nav_compress")}
-                  </Link>
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button asChild>
+                    <Link href="/compress" onClick={() => setOpen(false)}>
+                      {t("nav_compress")}
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/crop" onClick={() => setOpen(false)}>
+                      {t("nav_crop")}
+                    </Link>
+                  </Button>
+                </div>
 
                 <SignedIn>
                   <div className="mt-2 flex justify-end">

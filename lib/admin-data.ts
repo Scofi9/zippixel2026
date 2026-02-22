@@ -11,6 +11,18 @@ export type AdminEvent =
     }
   | {
       t: number;
+      type: "login";
+      path: string;
+      userId: string;
+    }
+  | {
+      t: number;
+      type: "logout";
+      path: string;
+      userId?: string | null;
+    }
+  | {
+      t: number;
       type: "compress";
       userId: string | null;
       file: string;
@@ -20,6 +32,30 @@ export type AdminEvent =
       savedBytes: number;
       savingsPercent: number;
     };
+
+export type CropEvent = {
+  t: number;
+  type: "crop";
+  userId: string | null;
+  file: string;
+  fmt: string;
+  originalBytes: number;
+  outputBytes: number;
+  crop: { x: number; y: number; width: number; height: number; rotation: number };
+};
+
+export type DownloadEvent = {
+  t: number;
+  type: "download";
+  userId: string;
+  action: "compress" | "crop";
+  file: string;
+  fmt: string;
+  id?: string;
+};
+
+// Backward-compatible union (admin:events may contain older records)
+export type AnyAdminEvent = AdminEvent | CropEvent | DownloadEvent;
 
 export function formatBytes(bytes: number) {
   const b = Number(bytes || 0);
@@ -33,10 +69,10 @@ export async function getRecentAdminEvents(limit = 50) {
   const redis = getRedis();
 
   const raw = await redis.lrange<string>("admin:events", 0, Math.max(0, limit - 1));
-  const events: AdminEvent[] = (raw || [])
+  const events: AnyAdminEvent[] = (raw || [])
     .map((x) => {
       try {
-        return JSON.parse(x) as AdminEvent;
+        return JSON.parse(x) as AnyAdminEvent;
       } catch {
         return null;
       }
@@ -47,7 +83,7 @@ export async function getRecentAdminEvents(limit = 50) {
   const userIds = Array.from(
     new Set(
       events
-        .map((e) => ("userId" in e ? e.userId : null))
+        .map((e) => ("userId" in e ? (e as any).userId : null))
         .filter(Boolean) as string[]
     )
   ).slice(0, 25);

@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { SupportWidget } from "@/components/support-widget"
 
 const footerSections = [
   {
     title: "Product",
     links: [
       { label: "Compress Images", href: "/compress" },
+      { label: "Crop Images", href: "/crop" },
       { label: "Compress JPG", href: "/compress/jpg" },
       { label: "Compress PNG", href: "/compress/png" },
       { label: "WebP Converter", href: "/compress/webp" },
@@ -69,7 +71,8 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} ZipPixel. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-3 md:flex-row md:gap-6">
+            <SupportWidget />
             <Link
               href="/privacy"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"

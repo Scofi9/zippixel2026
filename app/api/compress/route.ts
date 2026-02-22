@@ -12,7 +12,8 @@ type OutputFormat = "ORIGINAL" | "JPEG" | "PNG" | "WEBP" | "AVIF";
 
 type Job = {
   id: string;
-  userId: string;
+  userId: string | null;
+  action: "compress";
   fileName: string;
   outputFormat: OutputFormat;
   originalBytes: number;
@@ -20,6 +21,7 @@ type Job = {
   savingsPercent: number;
   createdAt: number;
   outputUrl: string;
+  outputFileName?: string;
 };
 
 function monthKey(d = new Date()) {
@@ -283,9 +285,16 @@ candidates.sort((a, b) => a.buf.length - b.buf.length);
     const id = crypto.randomUUID();
     const outputUrl = `/api/download?id=${id}`;
 
+    const safeName = file.name.replace(/[^\w.\-() ]+/g, "_");
+    const baseName = safeName.replace(/\.[^/.]+$/, "");
+    const ext = extFor(best.fmt);
+    const ct = contentTypeFor(best.fmt);
+    const outName = best.fmt === "ORIGINAL" ? safeName : `zippixel-${baseName}.${ext}`;
+
     const job: Job = {
       id,
-      userId,
+      userId: userId || null,
+      action: "compress",
       fileName: file.name,
       outputFormat: best.fmt,
       originalBytes: inputBuffer.length,
@@ -293,6 +302,7 @@ candidates.sort((a, b) => a.buf.length - b.buf.length);
       savingsPercent: Math.max(0, Math.round((1 - best.buf.length / inputBuffer.length) * 100)),
       createdAt: Date.now(),
       outputUrl,
+      outputFileName: outName,
     };
 
     // Store history only when signed in and Redis is available.
@@ -348,13 +358,6 @@ candidates.sort((a, b) => a.buf.length - b.buf.length);
         // ignore metrics errors
       }
     }
-
-    const ext = extFor(best.fmt);
-    const ct = contentTypeFor(best.fmt);
-
-    const safeName = file.name.replace(/[^\w.\-() ]+/g, "_");
-    const baseName = safeName.replace(/\.[^/.]+$/, "");
-    const outName = best.fmt === "ORIGINAL" ? safeName : `zippixel-${baseName}.${ext}`;
 
     return new NextResponse(best.buf, {
       headers: {

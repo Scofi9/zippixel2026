@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 };
 
 const TOOLS = [
+  { slug: "crop-image", title: "Crop Image Online" },
+  { slug: "image-cropper", title: "Online Image Cropper" },
+  { slug: "crop-photo", title: "Crop Photo" },
   { slug: "image-compressor", title: "Online Image Compressor" },
   { slug: "reduce-image-size", title: "Reduce Image File Size" },
   { slug: "compress-jpg", title: "Compress JPG" },
@@ -47,7 +50,7 @@ export default function ToolsIndexPage() {
           <Link
             key={t.slug}
             href={`/tools/${t.slug}`}
-            className="rounded-2xl border bg-card p-5 hover:shadow-sm"
+            className="group rounded-2xl border border-border/50 bg-card/50 p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-border"
           >
             <div className="font-medium">{t.title}</div>
             <div className="mt-2 text-sm text-muted-foreground">
@@ -57,9 +60,12 @@ export default function ToolsIndexPage() {
         ))}
       </div>
 
-      <div className="mt-12">
+      <div className="mt-12 flex flex-col gap-3 sm:flex-row">
         <Button asChild size="lg">
           <Link href="/compress">Open Compressor</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link href="/crop">Open Cropper</Link>
         </Button>
       </div>
     </div>

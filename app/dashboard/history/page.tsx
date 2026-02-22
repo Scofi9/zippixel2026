@@ -39,12 +39,15 @@ function formatSavingsPercent(value: any) {
 
 type JobItem = {
   id?: string;
+  action?: "compress" | "crop";
   fileName?: string;
   outputFormat?: string;
   originalBytes?: number;
   compressedBytes?: number;
+  outputBytes?: number;
   savingsPercent?: number;
   createdAt?: number;
+  outputFileName?: string;
 };
 
 export default async function HistoryPage() {
@@ -81,12 +84,12 @@ export default async function HistoryPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">History</h1>
-        <p className="mt-1 text-sm text-muted-foreground">All your past compression jobs.</p>
+        <p className="mt-1 text-sm text-muted-foreground">All your past compression and crop jobs.</p>
       </div>
 
       <Card className="border-border/50 bg-card/50">
         <CardHeader>
-          <CardTitle className="text-base">Compression History</CardTitle>
+          <CardTitle className="text-base">History</CardTitle>
         </CardHeader>
 
         <CardContent>
@@ -98,9 +101,10 @@ export default async function HistoryPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>File</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Format</TableHead>
                   <TableHead className="text-right">Original</TableHead>
-                  <TableHead className="text-right">Compressed</TableHead>
+                  <TableHead className="text-right">Output</TableHead>
                   <TableHead className="text-right">Savings</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">Date</TableHead>
                   <TableHead className="w-10" />
@@ -111,6 +115,8 @@ export default async function HistoryPage() {
                 {jobs.map((job, i) => {
                   const id = job.id;
                   const canDownload = Boolean(id);
+                  const action = job.action || "compress";
+                  const outBytes = Number(job.compressedBytes ?? job.outputBytes ?? 0);
 
                   return (
                     <TableRow key={id ?? i}>
@@ -124,6 +130,15 @@ export default async function HistoryPage() {
                       </TableCell>
 
                       <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={action === "crop" ? "bg-primary/10 text-primary text-xs" : "text-xs"}
+                        >
+                          {action}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell>
                         <Badge variant="secondary" className="text-xs">
                           {(job.outputFormat || "WEBP").toString().toUpperCase()}
                         </Badge>
@@ -134,7 +149,7 @@ export default async function HistoryPage() {
                       </TableCell>
 
                       <TableCell className="text-right font-mono text-xs">
-                        {formatBytes(job.compressedBytes || 0)}
+                        {formatBytes(outBytes)}
                       </TableCell>
 
                       <TableCell className="text-right">
