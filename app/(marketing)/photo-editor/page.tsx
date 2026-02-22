@@ -1,12 +1,11 @@
-import dynamic from "next/dynamic";
+import type { Metadata } from "next";
+import PhotoEditorClient from "./photo-editor-client";
 
-const PhotoEditor = dynamic(() => import("@/components/editor/photo-editor"), { ssr: false });
-
-export const metadata = {
+export const metadata: Metadata = {
   title: "Photo Editor | ZipPixel",
-  description: "Edit photos online: crop, resize, rotate, draw, add text, shapes, stickers, and export to JPG/PNG/WebP/AVIF.",
+  description: "Edit your photos online: crop, resize, draw, text, shapes, filters and export.",
 };
 
-export default function PhotoEditorPage() {
-  return <PhotoEditor />;
+export default function Page() {
+  return <PhotoEditorClient />;
 }
