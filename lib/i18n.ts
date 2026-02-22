@@ -25,6 +25,7 @@ export const DICT = {
     nav_login: "Log in",
     nav_compress: "Compress Images",
     nav_crop: "Crop Images",
+    nav_editor: "Photo Editor",
 
     // Landing
     hero_badge: "AI‑Powered Compression Engine",
@@ -147,6 +148,7 @@ export const DICT = {
     nav_login: "Giriş",
     nav_compress: "Görsel Sıkıştır",
     nav_crop: "Görsel Kırp",
+    nav_editor: "Fotoğraf Düzenle",
 
     hero_badge: "Yapay Zekâ Destekli Sıkıştırma Motoru",
     hero_title: "Kaliteyi bozmadan görselleri sıkıştır",

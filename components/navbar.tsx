@@ -17,6 +17,7 @@ import { useI18n } from "@/components/i18n-provider"
 const navLinks = [
   { key: "nav_features" as const, href: "/features" },
   { key: "nav_pricing" as const, href: "/pricing" },
+  { key: "nav_editor" as const, href: "/photo-editor" },
   { key: "nav_docs" as const, href: "/docs" },
 ]
 

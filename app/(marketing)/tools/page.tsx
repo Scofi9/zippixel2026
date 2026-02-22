@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 const TOOLS = [
+  { slug: "photo-editor", title: "Online Photo Editor" },
   { slug: "crop-image", title: "Crop Image Online" },
   { slug: "image-cropper", title: "Online Image Cropper" },
   { slug: "crop-photo", title: "Crop Photo" },
@@ -66,6 +67,9 @@ export default function ToolsIndexPage() {
         </Button>
         <Button asChild size="lg" variant="outline">
           <Link href="/crop">Open Cropper</Link>
+        </Button>
+        <Button asChild size="lg" variant="secondary">
+          <Link href="/photo-editor">Open Photo Editor</Link>
         </Button>
       </div>
     </div>
