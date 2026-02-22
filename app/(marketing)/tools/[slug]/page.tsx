@@ -2,122 +2,35 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 
-const TOOLS = [
-  {
-    "slug": "crop-image",
-    "title": "Crop Image Online",
-    "desc": "Crop images online in seconds. Reframe photos and export to JPG, PNG, WebP, or AVIF."
-  },
-  {
-    "slug": "image-cropper",
-    "title": "Online Image Cropper",
-    "desc": "A fast, simple image cropper for perfect framing and aspect ratios."
-  },
-  {
-    "slug": "crop-photo",
-    "title": "Crop Photo",
-    "desc": "Crop photos to the right size for social, web, and mobile."
-  },
-  {
-    "slug": "image-compressor",
-    "title": "Online Image Compressor",
-    "desc": "Compress images online in seconds. Reduce file size while keeping quality."
-  },
-  {
-    "slug": "reduce-image-size",
-    "title": "Reduce Image File Size",
-    "desc": "Make images smaller for web, email, and faster pages."
-  },
-  {
-    "slug": "compress-jpg",
-    "title": "Compress JPG",
-    "desc": "Shrink JPEG/JPG photos without visible quality loss."
-  },
-  {
-    "slug": "compress-png",
-    "title": "Compress PNG",
-    "desc": "Reduce PNG size while keeping transparency."
-  },
-  {
-    "slug": "compress-webp",
-    "title": "Compress WebP",
-    "desc": "Optimize WebP images for faster websites."
-  },
-  {
-    "slug": "compress-avif",
-    "title": "Compress AVIF",
-    "desc": "Optimize AVIF images for best compression."
-  },
-  {
-    "slug": "png-to-webp",
-    "title": "Convert PNG to WebP",
-    "desc": "Convert PNG images to modern WebP format for smaller files."
-  },
-  {
-    "slug": "jpg-to-webp",
-    "title": "Convert JPG to WebP",
-    "desc": "Convert JPEG/JPG images to WebP and save bandwidth."
-  },
-  {
-    "slug": "png-to-avif",
-    "title": "Convert PNG to AVIF",
-    "desc": "Convert PNG images to AVIF for top-tier compression."
-  },
-  {
-    "slug": "jpg-to-avif",
-    "title": "Convert JPG to AVIF",
-    "desc": "Convert JPEG/JPG images to AVIF with great quality."
-  },
-  {
-    "slug": "webp-to-jpg",
-    "title": "Convert WebP to JPG",
-    "desc": "Convert WebP images to JPG for compatibility."
-  },
-  {
-    "slug": "webp-to-png",
-    "title": "Convert WebP to PNG",
-    "desc": "Convert WebP images to PNG, preserve transparency when possible."
-  },
-  {
-    "slug": "avif-to-jpg",
-    "title": "Convert AVIF to JPG",
-    "desc": "Convert AVIF images to JPG for older apps."
-  },
-  {
-    "slug": "image-optimizer",
-    "title": "Image Optimizer",
-    "desc": "Optimize images for performance and SEO."
-  },
-  {
-    "slug": "bulk-image-compressor",
-    "title": "Bulk Image Compressor",
-    "desc": "Compress multiple images at once (batch workflow)."
-  },
-  {
-    "slug": "website-image-optimization",
-    "title": "Website Image Optimization",
-    "desc": "Optimize images to improve Core Web Vitals and page speed."
-  },
-  {
-    "slug": "ecommerce-image-compressor",
-    "title": "E-commerce Image Compressor",
-    "desc": "Make product images load fast while staying sharp."
-  },
-  {
-    "slug": "social-media-image-compressor",
-    "title": "Social Media Image Compressor",
-    "desc": "Compress images for Instagram, X, and more."
-  },
-  {
-    "slug": "free-image-compressor",
-    "title": "Free Image Compressor",
-    "desc": "Use ZipPixel to compress images for free with fair limits."
-  },
-  {
-    "slug": "online-webp-converter",
-    "title": "Online WebP Converter",
-    "desc": "Convert images to WebP instantly in your browser."
-  }
+type Tool = { slug: string; title: string; desc: string };
+
+const TOOLS: Tool[] = [
+  { slug: "crop-image", title: "Crop Image Online", desc: "Crop images online in seconds. Reframe photos and export to JPG, PNG, WebP, or AVIF." },
+  { slug: "image-cropper", title: "Online Image Cropper", desc: "A fast, simple image cropper for perfect framing and aspect ratios." },
+  { slug: "crop-photo", title: "Crop Photo", desc: "Crop photos to the right size for social, web, and mobile." },
+
+  { slug: "image-compressor", title: "Online Image Compressor", desc: "Compress images online in seconds. Reduce file size while keeping quality." },
+  { slug: "reduce-image-size", title: "Reduce Image File Size", desc: "Make images smaller for web, email, and faster pages." },
+  { slug: "compress-jpg", title: "Compress JPG", desc: "Shrink JPEG/JPG photos without visible quality loss." },
+  { slug: "compress-png", title: "Compress PNG", desc: "Reduce PNG size while keeping transparency." },
+  { slug: "compress-webp", title: "Compress WebP", desc: "Optimize WebP images for faster websites." },
+  { slug: "compress-avif", title: "Compress AVIF", desc: "Optimize AVIF images for best compression." },
+
+  { slug: "png-to-webp", title: "Convert PNG to WebP", desc: "Convert PNG images to modern WebP format for smaller files." },
+  { slug: "jpg-to-webp", title: "Convert JPG to WebP", desc: "Convert JPEG/JPG images to WebP and save bandwidth." },
+  { slug: "png-to-avif", title: "Convert PNG to AVIF", desc: "Convert PNG images to AVIF for top-tier compression." },
+  { slug: "jpg-to-avif", title: "Convert JPG to AVIF", desc: "Convert JPEG/JPG images to AVIF with great quality." },
+  { slug: "webp-to-jpg", title: "Convert WebP to JPG", desc: "Convert WebP images to JPG for compatibility." },
+  { slug: "webp-to-png", title: "Convert WebP to PNG", desc: "Convert WebP images to PNG, preserve transparency when possible." },
+  { slug: "avif-to-jpg", title: "Convert AVIF to JPG", desc: "Convert AVIF images to JPG for older apps." },
+
+  { slug: "image-optimizer", title: "Image Optimizer", desc: "Optimize images for performance and SEO." },
+  { slug: "bulk-image-compressor", title: "Bulk Image Compressor", desc: "Compress multiple images at once (batch workflow)." },
+  { slug: "website-image-optimization", title: "Website Image Optimization", desc: "Optimize images to improve Core Web Vitals and page speed." },
+  { slug: "ecommerce-image-compressor", title: "E-commerce Image Compressor", desc: "Make product images load fast while staying sharp." },
+  { slug: "social-media-image-compressor", title: "Social Media Image Compressor", desc: "Compress images for Instagram, X, and more." },
+  { slug: "free-image-compressor", title: "Free Image Compressor", desc: "Use ZipPixel to compress images for free with fair limits." },
+  { slug: "online-webp-converter", title: "Online WebP Converter", desc: "Convert images to WebP instantly in your browser." },
 ];
 
 export function generateStaticParams() {
@@ -130,6 +43,7 @@ function getTool(slug: string) {
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const tool = getTool(params.slug);
+
   if (!tool) {
     return {
       title: "Tool | ZipPixel",
@@ -144,24 +58,15 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   return {
     title,
     description,
-    alternates: {
-      canonical: `/tools/${tool.slug}`,
-    },
-    openGraph: {
-      title,
-      description,
-      url: `/tools/${tool.slug}`,
-      type: "website",
-    },
+    alternates: { canonical: `/tools/${tool.slug}` },
+    openGraph: { title, description, url: `/tools/${tool.slug}`, type: "website" },
   };
 }
 
 export default function ToolPage({ params }: { params: { slug: string } }) {
   const tool = getTool(params.slug);
-  const isCrop = tool.slug.includes("crop");
-  const primaryHref = isCrop ? "/crop" : "/compress";
-  const primaryLabel = isCrop ? "Crop images now" : "Compress images now";
 
+  // ✅ null check önce (build patlamasın)
   if (!tool) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16">
@@ -175,6 +80,10 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
       </div>
     );
   }
+
+  const isCrop = tool.slug.includes("crop");
+  const primaryHref = isCrop ? "/crop" : "/compress";
+  const primaryLabel = isCrop ? "Crop images now" : "Compress images now";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
@@ -190,22 +99,6 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
           <Button asChild variant="outline" size="lg">
             <Link href="/pricing">See plans</Link>
           </Button>
-        </div>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          <div className="rounded-xl border bg-background p-5">
-            <h2 className="font-medium">Best for</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Websites, e-commerce, social media, and anywhere you need faster image delivery.
-            </p>
-          </div>
-          <div className="rounded-xl border bg-background p-5">
-            <h2 className="font-medium">How it works</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Upload your image, choose output format and quality, then download the optimized result.
-              Your usage limit depends on your plan.
-            </p>
-          </div>
         </div>
 
         <div className="mt-10">
