@@ -45,7 +45,7 @@ export function SiteFooter() {
             </p>
 
             <div className="mt-2 inline-flex items-center gap-2 rounded-2xl border border-border/50 bg-card/50 p-2">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-600" />
               <div className="text-xs text-muted-foreground">
                 Privacy-friendly analytics. No cookies. No tracking pixels.
               </div>

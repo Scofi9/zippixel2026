@@ -188,12 +188,14 @@ if (!rl.ok) {
     const isUltra = mode === "ultra";
     const isFast = mode === "fast";
 
-    const webpEffort = isFast ? 4 : 6;
-    const avifEffort = isUltra ? 7 : 5;
+    // Lower effort => faster encoding. Users who want max savings can pick Ultra.
+    const webpEffort = isFast ? 3 : isUltra ? 6 : 4;
+    const avifEffort = isUltra ? 6 : 5;
 
     const inputIsLarge = inputBuffer.length >= 800 * 1024; // 800KB+
     const likelyPhoto = !hasAlpha && (meta.format === "jpeg" || meta.format === "jpg" || meta.format === "heif" || meta.format === "tiff");
-    const tryAvifInBalanced = mode === "balanced" && inputIsLarge && likelyPhoto;
+    // Balanced should stay fast. Only try AVIF when user explicitly asks or in Ultra.
+    const tryAvifInBalanced = false;
 
     // If user explicitly requested a format, produce only that (predictable + fast).
     if (requested !== "auto") {
@@ -260,7 +262,7 @@ if (!rl.ok) {
         candidates.push({ fmt: "WEBP", buf: webpBuf });
 
         try {
-          const avifBuf = await base.avif({ quality: q, effort: 7, chromaSubsampling: "4:2:0" }).toBuffer();
+          const avifBuf = await base.avif({ quality: q, effort: avifEffort, chromaSubsampling: "4:2:0" }).toBuffer();
           candidates.push({ fmt: "AVIF", buf: avifBuf });
         } catch {
           // ignore

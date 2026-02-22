@@ -32,7 +32,7 @@ const plans = [
     period: "forever",
     description: "Perfect for personal projects and testing.",
     features: [
-      "50 images / month",
+      "10 images / month",
       "Max 5MB per image",
       "JPG, PNG, WebP",
       "Standard compression",
@@ -48,7 +48,7 @@ const plans = [
     period: "/month",
     description: "For small sites and creators getting serious.",
     features: [
-      "300 images / month",
+      "250 images / month",
       "Max 10MB per image",
       "JPG, PNG, WebP, AVIF",
       "Faster compression",
@@ -64,7 +64,7 @@ const plans = [
     period: "/month",
     description: "For professionals who compress daily.",
     features: [
-      "2,000 images / month",
+      "1,000 images / month",
       "Max 25MB per image",
       "All modern formats",
       "Priority processing",
@@ -81,7 +81,7 @@ const plans = [
     period: "/month",
     description: "For power users & agencies with heavy volume.",
     features: [
-      "10,000 images / month",
+      "2,500 images / month",
       "Max 50MB per image",
       "All modern formats",
       "Highest priority queue",
@@ -95,7 +95,7 @@ const plans = [
 ]
 
 const comparison = [
-  { feature: "Monthly images", free: "50", basic: "300", pro: "2,000", plus: "10,000" },
+  { feature: "Monthly images", free: "10", basic: "250", pro: "1,000", plus: "2,500" },
   { feature: "Max file size (per image)", free: "5MB", basic: "10MB", pro: "25MB", plus: "50MB" },
   { feature: "Formats", free: "JPG, PNG, WebP", basic: "JPG, PNG, WebP, AVIF", pro: "All modern", plus: "All modern" },
   { feature: "Compression speed", free: "Standard", basic: "Fast", pro: "Faster", plus: "Fastest" },

@@ -175,7 +175,8 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
   })();
 
   const [format, setFormat] = useState<OutputFormat>(initialFormat);
-  const [mode, setMode] = useState<Mode>("balanced");
+  // Default to FAST for snappier results; users can switch to Balanced/Ultra.
+  const [mode, setMode] = useState<Mode>("fast");
   const [results, setResults] = useState<Item[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -236,11 +237,8 @@ export default function UploadZone({ defaultFormat }: { defaultFormat?: string }
       fd.set("format", format);
       fd.set("mode", mode);
 
-      // small UX step
-      await new Promise((r) => setTimeout(r, 180));
-      setResults((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, stage: "compressing" } : r))
-      );
+      // Go straight to compressing (keep it snappy)
+      setResults((prev) => prev.map((r) => (r.id === id ? { ...r, stage: "compressing" } : r)));
 
       const res = await fetch("/api/compress", { method: "POST", body: fd });
 

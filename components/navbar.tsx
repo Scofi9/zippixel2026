@@ -27,23 +27,23 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/60 dark:bg-background/60 backdrop-blur-xl">
-      <nav className="relative mx-auto flex h-16 max-w-7xl items-center px-4 lg:px-8">
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
+        {/* Left: brand */}
         <div className="flex items-center gap-3">
           <Logo />
-
-          {/* Primary tools (left) */}
-          <div className="hidden items-center gap-2 md:flex">
-            <Button size="sm" asChild className="h-9 rounded-xl px-4">
-              <Link href="/compress">{t("nav_compress")}</Link>
-            </Button>
-            <Button size="sm" variant="outline" asChild className="h-9 rounded-xl px-4">
-              <Link href="/crop">{t("nav_crop")}</Link>
-            </Button>
-          </div>
         </div>
 
-        {/* Desktop nav (perfectly centered) */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center justify-center gap-1 md:flex">
+        {/* Center: tools + nav (desktop) */}
+        <div className="hidden items-center gap-2 md:flex">
+          <Button size="sm" asChild className="h-9 rounded-full px-4">
+            <Link href="/compress">{t("nav_compress")}</Link>
+          </Button>
+          <Button size="sm" variant="outline" asChild className="h-9 rounded-full px-4">
+            <Link href="/crop">{t("nav_crop")}</Link>
+          </Button>
+
+          <div className="mx-2 h-6 w-px bg-border/60" />
+
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -58,8 +58,8 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Desktop right side */}
-        <div className="ml-auto hidden items-center justify-end gap-2 md:flex">
+        {/* Right: actions */}
+        <div className="hidden items-center justify-end gap-2 md:flex">
           <LanguageToggle />
           <ThemeToggle />
 
@@ -81,7 +81,7 @@ export function Navbar() {
         </div>
 
         {/* Mobile menu */}
-        <div className="ml-auto flex items-center justify-end md:hidden">
+        <div className="flex items-center justify-end md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">

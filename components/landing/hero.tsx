@@ -10,10 +10,10 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden border-b border-border/50 py-16 sm:py-20 lg:py-28">
-      {/* vivid background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(79,70,229,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(236,72,153,0.14),transparent_55%)]" />
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
+      {/* vivid blue background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.22),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(37,99,235,0.18),transparent_55%)]" />
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-500/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 lg:px-8">
         <div className="grid items-center gap-10 lg:grid-cols-2">
@@ -50,14 +50,26 @@ export function Hero() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 blur-2xl" />
+            <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-r from-sky-500/12 via-blue-500/12 to-indigo-500/12 blur-2xl" />
             <div className="relative overflow-hidden rounded-[28px] border border-border/50 bg-background/40 p-3 shadow-xl backdrop-blur">
-              <img
-                src="/hero-tools.svg"
-                alt="ZipPixel tools preview"
-                className="h-auto w-full select-none rounded-2xl"
-                loading="lazy"
-              />
+              <div className="relative overflow-hidden rounded-2xl">
+                {/* Video preview (loop) */}
+                <video
+                  className="h-auto w-full select-none"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  poster="/hero-tools.svg"
+                >
+                  <source src="/hero-demo.webm" type="video/webm" />
+                  <source src="/hero-demo.mp4" type="video/mp4" />
+                </video>
+
+                {/* subtle sheen */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent" />
+              </div>
             </div>
           </div>
         </div>
