@@ -42,6 +42,13 @@ export function Navbar() {
           <Button size="sm" variant="outline" asChild className="h-9 rounded-full px-4">
             <Link href="/crop">{t("nav_crop")}</Link>
           </Button>
+          <Button
+            size="sm"
+            asChild
+            className="h-9 rounded-full px-4 bg-blue-600 text-white hover:bg-blue-500"
+          >
+            <Link href="/photo-editor">{t("nav_editor")}</Link>
+          </Button>
 
           <div className="mx-2 h-6 w-px bg-border/60" />
 
@@ -149,6 +156,10 @@ export function Navbar() {
                     </Link>
                   </Button>
                 </div>
+
+                <Button asChild className="mt-2" onClick={() => setOpen(false)}>
+                  <Link href="/photo-editor">{t("nav_editor")}</Link>
+                </Button>
 
                 <SignedIn>
                   <div className="mt-2 flex justify-end">

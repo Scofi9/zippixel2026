@@ -71,16 +71,51 @@ const STICKERS: { name: string; src: string }[] = [
       </svg>`
     ),
   },
+
+
 ];
+
+async function fabricImageFromURL(f: any, url: string, opts: any = {}) {
+  // Fabric v5 uses callback: Image.fromURL(url, cb, opts)
+  // Fabric v6 uses promise: FabricImage.fromURL(url, opts)
+  const ImageCtor = f?.FabricImage ?? f?.Image;
+  const fn = ImageCtor?.fromURL;
+  if (!fn) throw new Error("Fabric fromURL not available");
+
+  // Heuristic: callback-style functions usually have >= 2 params
+  if (typeof fn === "function" && fn.length >= 2) {
+    return await new Promise((resolve, reject) => {
+      try {
+        fn.call(ImageCtor, url, (img: any) => resolve(img), opts);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  const maybe = fn.call(ImageCtor, url, opts);
+  if (maybe && typeof maybe.then === "function") return await maybe;
+  return maybe;
+}
+
+function getFilterCtor(f: any, name: string) {
+  // v5: Image.filters.*
+  // v6: filters.*
+  const ns = f?.filters ?? f?.Image?.filters ?? f?.FabricImage?.filters;
+  return ns?.[name] ?? f?.[name] ?? null;
+}
+
 
 export default function PhotoEditor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const fabricRef = useRef<FabricNS | null>(null);
+  const fabricRef = useRef<any>(null);
   const canvasRef = useRef<any>(null);
   const bgImageRef = useRef<any>(null);
 
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pendingFileRef = useRef<File | null>(null);
   const [tool, setTool] = useState<
     "select" | "draw" | "crop" | "text" | "rect" | "circle" | "arrow" | "eraser" | "sticker"
   >("select");
@@ -141,10 +176,14 @@ export default function PhotoEditor() {
   async function initFabric() {
     if (!canvasElRef.current) return;
 
-    const fabric = await import("fabric");
+    const mod = await import("fabric");
+    const fabric = (mod as any).fabric ?? mod;
     fabricRef.current = fabric;
 
-    const c = new fabric.Canvas(canvasElRef.current, {
+    const CanvasCtor = (fabric as any).Canvas;
+    if (!CanvasCtor) throw new Error("Fabric Canvas not available");
+
+    const c = new CanvasCtor(canvasElRef.current, {
       backgroundColor: "#0b1220",
       preserveObjectStacking: true,
       selection: true,
@@ -197,6 +236,16 @@ export default function PhotoEditor() {
     window.addEventListener("keydown", onKey);
 
     setReady(true);
+
+    // If user selected a file before editor was ready, load it now
+    if (pendingFileRef.current) {
+      const pf = pendingFileRef.current;
+      pendingFileRef.current = null;
+      try {
+        // fire and forget
+        loadImage(pf);
+      } catch {}
+    }
 
     return () => {
       window.removeEventListener("resize", fit);
@@ -395,47 +444,58 @@ export default function PhotoEditor() {
   async function loadImage(file: File) {
     const c = canvasRef.current;
     const fabric = fabricRef.current as any;
-    if (!c || !fabric) return;
+
+    if (!c || !fabric) {
+      // Not ready yet: queue
+      pendingFileRef.current = file;
+      return;
+    }
+
+    setError(null);
 
     const url = URL.createObjectURL(file);
+    try {
+      const img: any = await fabricImageFromURL(fabric, url, { crossOrigin: "anonymous" });
 
-    fabric.Image.fromURL(
-      url,
-      (img: any) => {
-        // Clear everything but keep background
-        c.getObjects().forEach((o: any) => c.remove(o));
+      // Clear everything but keep background
+      c.getObjects().forEach((o: any) => c.remove(o));
 
-        img.set({
-          left: 0,
-          top: 0,
-          originX: "left",
-          originY: "top",
-          selectable: false,
-          evented: false,
-        });
+      img.set({
+        left: 0,
+        top: 0,
+        originX: "left",
+        originY: "top",
+        selectable: false,
+        evented: false,
+      });
 
-        // Fit image into canvas area while preserving aspect
-        const cw = c.getWidth();
-        const ch = c.getHeight();
-        const iw = img.width || 1;
-        const ih = img.height || 1;
-        const scale = Math.min(cw / iw, ch / ih);
-        img.scale(scale);
+      // Fit image into canvas area while preserving aspect
+      const cw = c.getWidth();
+      const ch = c.getHeight();
+      const iw = img.width || 1;
+      const ih = img.height || 1;
+      const scale = Math.min(cw / iw, ch / ih);
+      if (typeof img.scale === "function") img.scale(scale);
+      else {
+        img.scaleX = scale;
+        img.scaleY = scale;
+      }
 
-        bgImageRef.current = img;
-        c.add(img);
-        c.sendToBack(img);
-        c.requestRenderAll();
+      bgImageRef.current = img;
+      c.add(img);
+      c.sendToBack(img);
+      c.requestRenderAll();
 
-        setResizeW(Math.round(iw));
-        setResizeH(Math.round(ih));
-        aspect.current = iw / ih;
+      setResizeW(Math.round(iw));
+      setResizeH(Math.round(ih));
+      aspect.current = iw / ih;
 
-        pushState();
-        URL.revokeObjectURL(url);
-      },
-      { crossOrigin: "anonymous" }
-    );
+      pushState();
+    } catch (e: any) {
+      setError(e?.message || "Failed to load image");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   function applyAdjustments() {
@@ -447,10 +507,10 @@ export default function PhotoEditor() {
     const filters: any[] = [];
 
     // Brightness/Contrast/Saturation
-    if (brightness !== 0) filters.push(new fabric.Image.filters.Brightness({ brightness: brightness / 100 }));
-    if (contrast !== 0) filters.push(new fabric.Image.filters.Contrast({ contrast: contrast / 100 }));
-    if (saturation !== 0) filters.push(new fabric.Image.filters.Saturation({ saturation: saturation / 100 }));
-    if (blur > 0) filters.push(new fabric.Image.filters.Blur({ blur: clamp(blur / 100, 0, 1) }));
+    if (brightness !== 0) { const C = getFilterCtor(fabric, 'Brightness'); if (C) filters.push(new C({ brightness: brightness / 100 })); }
+    if (contrast !== 0) { const C = getFilterCtor(fabric, 'Contrast'); if (C) filters.push(new C({ contrast: contrast / 100 })); }
+    if (saturation !== 0) { const C = getFilterCtor(fabric, 'Saturation'); if (C) filters.push(new C({ saturation: saturation / 100 })); }
+    if (blur > 0) { const C = getFilterCtor(fabric, 'Blur'); if (C) filters.push(new C({ blur: clamp(blur / 100, 0, 1) })); }
 
     img.filters = filters;
     img.applyFilters();
@@ -510,7 +570,8 @@ export default function PhotoEditor() {
       const outUrl = tmp.toDataURL("image/png");
       const f = fabricRef.current as any;
       if (!f) return;
-      f.Image.fromURL(outUrl, (newImg: any) => {
+      fabricImageFromURL(f, outUrl, { crossOrigin: 'anonymous' })
+        .then((newImg: any) => {
         // Reset canvas objects and set new image as background
         c.getObjects().forEach((o: any) => c.remove(o));
         newImg.set({ left: 0, top: 0, originX: "left", originY: "top", selectable: false, evented: false });
@@ -530,7 +591,8 @@ export default function PhotoEditor() {
 
         setTool("select");
         pushState();
-      });
+      })
+        .catch((e: any) => setError(e?.message || 'Crop failed'));
     };
     fullImg.src = full;
   }
@@ -556,7 +618,8 @@ export default function PhotoEditor() {
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(im, 0, 0, w, h);
       const out = tmp.toDataURL("image/png");
-      fabric.Image.fromURL(out, (newImg: any) => {
+      fabricImageFromURL(fabric, out, { crossOrigin: 'anonymous' })
+        .then((newImg: any) => {
         c.getObjects().forEach((o: any) => c.remove(o));
         newImg.set({ left: 0, top: 0, originX: "left", originY: "top", selectable: false, evented: false });
         const cw = c.getWidth();
@@ -570,7 +633,8 @@ export default function PhotoEditor() {
         c.sendToBack(newImg);
         c.requestRenderAll();
         pushState();
-      });
+      })
+        .catch((e: any) => setError(e?.message || 'Resize failed'));
     };
     im.src = src;
   }
@@ -619,7 +683,10 @@ export default function PhotoEditor() {
     const fabric = fabricRef.current as any;
     if (!c || !fabric) return;
 
-    fabric.Image.fromURL(src, (img: any) => {
+    setError(null);
+
+    try {
+      const img: any = await fabricImageFromURL(fabric, src, { crossOrigin: "anonymous" });
       img.set({
         left: c.getWidth() * 0.5,
         top: c.getHeight() * 0.5,
@@ -632,7 +699,9 @@ export default function PhotoEditor() {
       c.setActiveObject(img);
       c.requestRenderAll();
       pushState();
-    });
+    } catch (e: any) {
+      setError(e?.message || "Failed to add sticker");
+    }
   }
 
   async function exportImage() {
@@ -792,6 +861,8 @@ export default function PhotoEditor() {
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) loadImage(f);
+                  // allow picking same file again
+                  e.currentTarget.value = "";
                 }}
               />
               Upload image
@@ -809,6 +880,11 @@ export default function PhotoEditor() {
             <div ref={containerRef} className="h-[640px] w-full">
               <canvas ref={canvasElRef} className="h-full w-full" />
             </div>
+            {error && (
+              <div className="absolute left-4 top-4 z-10 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </div>
+            )}
             {!ready && (
               <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">Loading editor…</div>
             )}
